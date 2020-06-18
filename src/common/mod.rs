@@ -43,6 +43,19 @@ impl Sub for Point {
         }
         Point { c: result }
     }
+
+}
+
+impl Sub<f32> for Point{
+    type Output = Self;
+    fn sub(self, b: f32) -> Point{
+        let mut result: Vec<f32> = vec![0.0; self.dim()];
+
+        for i in 0..self.dim() {
+            result[i] = self.c[i] - b;
+        }
+        Point { c: result }
+    }
 }
 
 impl Mul<f32> for Point {

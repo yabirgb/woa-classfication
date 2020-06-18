@@ -3,6 +3,7 @@ extern crate serde_json;
 
 mod common;
 mod input_parsing;
+mod woa;
 
 use std::env;
 use std::time::Instant;
@@ -11,6 +12,7 @@ use std::fs::OpenOptions;
 
 use common::{calc_c_value_inf, calc_lambda, calc_score, AlgResult, Output, Point};
 use input_parsing::{read_points, read_restrictions};
+use woa::woa_clustering;
 
 fn main() {
     //let data: Vec<Array1<f32>> = read_points("/home/yabirgb/Documents/data/iris_set.dat");
@@ -83,6 +85,8 @@ fn main() {
     if args[2][..].to_string().contains("20") {
         nrestrictions = 20;
     }
+
+    result = woa_clustering(&data, &restrictions, k, l, seed, 10, 1);
 
     let mut print = false;
 
