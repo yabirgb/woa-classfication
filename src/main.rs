@@ -86,7 +86,7 @@ fn main() {
         nrestrictions = 20;
     }
 
-    result = woa_clustering(&data, &restrictions, k, l, seed, 10, 1);
+    result = woa_clustering(&data, &restrictions, k, l, seed, 5, 10);
 
     let mut print = false;
 
