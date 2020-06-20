@@ -1,10 +1,8 @@
 use crate::common::{Point, euclid_dist, AlgResult, calc_score};
 
 use rand::rngs::StdRng;
-use rand::seq::SliceRandom;
 use rand::Rng;
 use rand::SeedableRng;
-use rand::distributions::Uniform;
 
 fn linear_scale(init_val:f32, final_val:f32, t: usize, total_steps: usize) -> f32{
 
@@ -42,15 +40,17 @@ fn find_best_whale(
 fn positional_move(
     whale: &mut Vec<Vec<f32>>, 
     best_whale:&Vec<Vec<f32>>,
-    A: &Point,
-    C: f32,
-    rng: &mut StdRng
+    A: Point,
+    C: Vec<f32>,
 ){
 
-    let mut D:f32 = 0.0;
+    // this function modifies whales by the encicling prey thecnique 
+    // X(t+1) = Best solution - AD
 
     let mut whale_points: Vec<Point> = Vec::with_capacity(whale.len());
     let mut best_whale_points: Vec<Point> = Vec::with_capacity(whale.len());
+
+    let mut a_vec = A.clone();
 
     for (i, centroid) in best_whale.iter().enumerate(){
         let whale_i_cluster = Point{c: whale[i].clone()};
@@ -59,12 +59,46 @@ fn positional_move(
         whale_points.push(whale_i_cluster.clone());
         best_whale_points.push(best_whale_i_cluster.clone());
 
-        D += euclid_dist(&(best_whale_i_cluster*C)  , &whale_i_cluster);
+        // A*D
+        a_vec.c[i] *= euclid_dist(&(best_whale_i_cluster*C[i])  , &whale_i_cluster);
 
     }
 
     for (i, _whale_coord) in whale_points.iter().enumerate(){
-        whale[i] = (best_whale_points[i].clone()-A.clone()*D).c;
+        whale[i] = (best_whale_points[i].clone()-a_vec.c[i]).c;
+    }
+
+    
+}
+
+#[allow(non_snake_case)]
+fn random_positional_move(
+    whale: &mut Vec<Vec<f32>>, 
+    random: &Vec<Vec<f32>>,
+    A: &Point,
+){
+
+    let mut whale_points: Vec<Point> = Vec::with_capacity(whale.len());
+    let mut random_whale_points: Vec<Point> = Vec::with_capacity(whale.len());
+
+    let mut a_vec = A.clone();
+
+    //println!("A_vec: {:?}", a_vec );
+    //println!("random: {:?}", random);
+    for (i, centroid) in random.iter().enumerate(){
+        let whale_i_cluster = Point{c: whale[i].clone()};
+        let random_whale_i_cluster = Point{c: centroid.clone()};
+
+        whale_points.push(whale_i_cluster.clone());
+        random_whale_points.push(random_whale_i_cluster.clone());
+
+        // A*D
+        a_vec.c[i] *= euclid_dist(&random_whale_i_cluster  , &whale_i_cluster);
+
+    }
+
+    for (i, _whale_coord) in whale_points.iter().enumerate(){
+        whale[i] = (random_whale_points[i].clone()-a_vec.c[i]).c;
     }
 
     
@@ -76,10 +110,11 @@ fn spiral_move(
     best_whale:&Vec<Vec<f32>>,
     rng: &mut StdRng
 ){
-    let l = rng.gen::<f32>();
-    let mut D:f32 = 0.0;
+    let l:f32 = rng.gen_range(-1.0,1.0);
 
-    let b = 1.6;
+    let mut D:Vec<f32> = Vec::with_capacity(whale.len());
+
+    let b = 1.0;
 
     let mut whale_points: Vec<Point> = Vec::with_capacity(whale.len());
     let mut best_whale_points: Vec<Point> = Vec::with_capacity(whale.len());
@@ -91,14 +126,14 @@ fn spiral_move(
         whale_points.push(whale_i_cluster.clone());
         best_whale_points.push(best_whale_i_cluster.clone());
 
-        D += euclid_dist(&(best_whale_i_cluster)  , &whale_i_cluster);
+        D.push(euclid_dist(&(best_whale_i_cluster)  , &whale_i_cluster));
 
     }
 
     let radius = (b*l).exp()*(2.0*l*std::f32::consts::PI).cos();
-
+    //println!("BEST: {:?}\nWhale: {:?}\nD: {:?}", best_whale_points,best_whale_points, D);
     for (i, _whale_coord) in whale_points.iter().enumerate(){
-        whale[i] = (best_whale_points[i].clone() + radius*D).c;
+        whale[i] = (best_whale_points[i].clone() + D[i]*radius).c;
     }
 }
 
@@ -111,7 +146,7 @@ pub fn woa_clustering(
     l: f32,
     seed: u64,
     n_agents:usize,
-    max_iterations: usize
+    max_evaluations: usize
 )->AlgResult
 {
 
@@ -120,8 +155,10 @@ pub fn woa_clustering(
 
     // Define constants of the woa algoritm
     let a_start = 2.0;
-    let mut a: f32 = 2.0;
-    let mut p: f32;
+
+    // set the maximum number of iterations
+
+    let max_iterations = max_evaluations/n_agents;
 
     // determine min and max for each component on the input data
 
@@ -165,8 +202,13 @@ pub fn woa_clustering(
 
     while current_iteration < max_iterations{
 
+        // Store for each whale an assignation of clusters
         let mut whale_solutions: Vec<Vec<usize>> = Vec::with_capacity(n_agents);
 
+        // for each set of clusters centers find the best solution
+        // Iterate over the points searcvhing the nearest cluster and assing
+        // it to the point
+        // TODO: If the solution is not valid generate a new solution
         for whale in &whales {
             let mut solution: Vec<usize> = Vec::with_capacity(n_agents);
             let mut best_distance:f32 = std::f32::MAX;
@@ -188,45 +230,75 @@ pub fn woa_clustering(
             whale_solutions.push(solution);
         }
 
-        // get id of the best whale
-
-        let (best_whale_id, best_whale_score) = find_best_whale(&whale_solutions, data, rest, k, l);
+        // get id of the best whale beteween all the geneated solutions
+        let (best_whale_id, _best_whale_score) = find_best_whale(&whale_solutions, data, rest, k, l);
 
         let best_whale = whales[best_whale_id].clone();
         best_whale_solution = whale_solutions[best_whale_id].clone();
         //println!{"Best whale ({}) {:?} with score {}", best_whale, whale_solutions[best_whale], best_whale_score};
 
+        // for each sear agend
+
+        let whales_size = whales.len();
+        let whales_copy = whales.clone();
+
         for whale in &mut whales{
 
-            let r = rng.gen::<f32>();
-            let a_val = rng.gen::<f32>()*2.0;
-            let a_vec = Point{c: vec![a_val; whale[0].len()]};
-            let A = a_vec.clone()*2.0*r - a_vec.clone();
-            let C = 2.0*r;
+            // Update a, A, C, l and p
+            let r:f32 = rng.gen_range(0.0, 1.0);
 
+            let a = linear_scale(a_start, 0.0, current_iteration, max_iterations);
+
+            let a_vec = Point{c: vec![a; k as usize]};
+            let A = a_vec.clone()*2.0*r - a_vec.clone();
+            // here C is not a vector because is a constant vector always multiplied by another
+            let C:Vec<f32> = (0..k).map(|_x| 2.0*rng.gen_range(0.0, 1.0)).collect::<Vec<f32>>(); 
+
+            //println!("Norm of A matrix: {:?}", A);
             // Compute p value
             if rng.gen::<f32>() < 0.5{
                 if A.norm() < 1.0{
                     positional_move(whale,
                         &best_whale,
-                        &A,
-                        C,
-                        &mut rng
+                        A,
+                        C
                     );
+                }else{
+                    let selected_whale_id:usize = rng.gen_range(0, whales_size);
+                    random_positional_move(whale, &whales_copy[selected_whale_id], &A);
                 }
             }else{
+                // l value is generated inside this function
                 spiral_move(whale, &best_whale, &mut rng);
+            }
+        }
+
+        // re-enter whales that have gone aoutside the boundaries
+
+        for whale in &mut whales{
+            for cluster in whale.iter_mut(){
+                for (i, max_cord) in max.iter().enumerate() {
+                    if cluster[i] > *max_cord{
+                        cluster[i] = *max_cord;
+                    }
+                }
+                for (i, min_cord) in min.iter().enumerate() {
+                    if cluster[i] < *min_cord{
+                        cluster[i] = *min_cord;
+                    }
+                }
             }
         }
 
         current_iteration += 1;
 
-        println!("Best solution {:?}", best_whale_solution);
-        println!("Score {}", calc_score(&best_whale_solution, data, rest, k, l));
-
-        a = linear_scale(a_start, a, current_iteration, max_iterations);
+        //println!("Whales: {:?}", whales);
+        //println!("Best solution {:?}", best_whale_solution);
+        //println!("Score {}", calc_score(&best_whale_solution, data, rest, k, l));
+        //println!("Current best score: {}", best_whale_score);
     }
-
+    println!("Best solution {:?}", best_whale_solution);
+    println!("Score {}", calc_score(&best_whale_solution, data, rest, k, l));
 
     AlgResult {
         sol: None,

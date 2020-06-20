@@ -107,6 +107,8 @@ impl Point {
 }
 
 pub fn euclid_dist(p1: &Point, p2: &Point) -> f32 {
+
+    assert_eq!(p1.dim(),p2.dim());
     let mut dist = 0.0;
     for i in 0..p1.dim() {
         dist += (p1.c[i as usize] - p2.c[i as usize]) * (p1.c[i as usize] - p2.c[i as usize]);
