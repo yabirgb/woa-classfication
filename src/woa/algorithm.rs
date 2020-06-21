@@ -13,21 +13,23 @@ fn linear_scale(max_val:f32, t: usize, total_steps: usize) -> f32{
     max_val - t as f32 *2.0/total_steps as f32
 }
 
-fn calc_inf_delta(point_id: usize, 
-    cluster_points: &Vec<usize>, 
+fn calc_inf_delta(
+    data: &Vec<Point>,
     rest: &Vec<Vec<i8>>,
-    prev_inf: f32
+    point_id: usize, 
+    cluster_points: &Vec<usize>, 
 ) ->f32 {
     // calc the change on infeasibility made by assignign point_id to clust k
     // given the current solution
 
-    let mut inf = prev_inf;
-
-    for c in cluster_points.iter() {
-
-        if rest[*c][point_id] == -1{
-            inf += 1.0;
-        }
+    let mut inf = 0.0;
+    for (pair, value) in rest[point_id].iter().enumerate(){
+        let contains = cluster_points.contains(&pair);
+        if *value == 1 && !contains{
+            inf += 1.0
+        }else if *value == -1 && contains{
+            inf += 1.0
+        } 
     }
 
     inf
@@ -50,16 +52,16 @@ fn cluster_assignation(
 
     // Store related points in a hashmap
     let mut clusters: Vec<Vec<usize>> = vec![Vec::new();k as usize];
-    let mut clusters_inf: Vec<f32> = vec![0.0; k as usize];
 
     for point_id in order.clone().iter(){
         // select the best cluster for this point in terms of
         // infeassibility. First computy diff in infeasbility
-        let diff_inf: Vec<f32> = clusters
-        .iter()
-        .enumerate()
-        .map(|(i,x)| calc_inf_delta(*point_id, x, rest, clusters_inf[i]))
-        .collect();
+        let mut diff_inf = Vec::new();
+
+
+        for i in 0..k{
+            diff_inf.push(calc_inf_delta(data, rest, *point_id, &clusters[i as usize]));
+        }
 
         // get min value from previous list
         let min_inf_delta = diff_inf.iter().min_by(|a,b| a.partial_cmp(b).unwrap()).unwrap();
@@ -78,9 +80,8 @@ fn cluster_assignation(
         }
 
 
-        if clusters[cluster_candidates[0]].len() == 0{
+        if clusters[cluster_candidates[0]].len() == 0 || cluster_candidates.len() == 1{
             clusters[cluster_candidates[0]].push(*point_id);
-            clusters_inf[cluster_candidates[0]] = diff_inf[cluster_candidates[0]];
         }else{
             // if we have more than one candidate choose the nearest one
             let mut distances: Vec<f32> = Vec::new();
@@ -104,7 +105,6 @@ fn cluster_assignation(
 
             // add the point to the cluster list
             clusters[best_cluster].push(*point_id);
-            clusters_inf[best_cluster] = diff_inf[best_cluster];
             // mark the point as added
         }
 
@@ -412,6 +412,7 @@ pub fn woa_clustering(
         if best_whale_score < best_score_ever {
             best_score_ever = best_whale_score;
             best_solution_ever = best_whale_solution.clone();
+            println!("Best score ever {}", best_score_ever);
         }
         
     }
@@ -443,7 +444,7 @@ pub fn woa_clustering_ls(
 )->AlgResult
 {
 
-    let MAX_LS_EVALS:usize = 1000;
+    let MAX_LS_EVALS:usize = 5000;
 
     let dim = data[0].dim();
     let mut rng = StdRng::seed_from_u64(seed);
@@ -574,12 +575,12 @@ pub fn woa_clustering_ls(
             }
         }
 
-        println!("Current best score prev ls {}", best_whale_score);
+        //println!("Current best score prev ls {}", best_whale_score);
         //println!("Whales: {:?}", whales);
 
         let mut new_whales: Vec<Vec<Vec<f32>>> = Vec::new();
 
-        println!("{:?}", whales);
+        //println!("{:?}", whales);
 
         for (whale_id, whale) in whales.iter_mut().enumerate(){
             let (ls_centroid, ls_solution, ls_score) = ls_solve(
@@ -611,10 +612,12 @@ pub fn woa_clustering_ls(
         if best_whale_score < best_score_ever {
             best_score_ever = best_whale_score;
             best_solution_ever = best_whale_solution.clone();
+            println!("Best score ever {}", best_score_ever);
+
         }
 
 
-        println!("Current best score after ls {}", best_whale_score);
+        //println!("Current best score after ls {}", best_whale_score);
         //println!("Whales: {:?}", whales);
 
         

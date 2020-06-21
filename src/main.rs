@@ -85,7 +85,7 @@ fn main() {
     }
 
     let start = Instant::now();
-    result = woa_clustering_ls(&data, &restrictions, k, l, seed, 10, 100000);
+    result = woa_clustering(&data, &restrictions, k, l, seed, 50 , 100000);
 
     let time = start.elapsed().as_secs_f32();
     
