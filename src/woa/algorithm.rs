@@ -8,11 +8,8 @@ use rand::seq::SliceRandom;
 use crate::common::{Point, euclid_dist, AlgResult, calc_score};
 
 
-fn linear_scale(init_val:f32, final_val:f32, t: usize, total_steps: usize) -> f32{
-
-    let step: f32 = t as f32/ total_steps as f32;
-
-    init_val*(1.0-step) + step*final_val
+fn linear_scale(max_val:f32, t: usize, total_steps: usize) -> f32{
+    max_val - t as f32 *2.0/total_steps as f32
 }
 
 fn calc_inf_delta(point_id: usize, cluster_points: &HashSet<usize>, rest: &Vec<Vec<i8>>) ->f32 {
@@ -42,7 +39,7 @@ fn cluster_assignation(
     data: &Vec<Point>,
     rest: &Vec<Vec<i8>>,
     k:u32,
-    l:f32,
+    _l:f32,
     mut rng: &mut StdRng
 )->Vec<usize>{
 
@@ -200,6 +197,7 @@ fn random_positional_move(
     whale: &mut Vec<Vec<f32>>, 
     random: &Vec<Vec<f32>>,
     A: &Point,
+    C: Vec<f32>,
 ){
 
     let mut whale_points: Vec<Point> = Vec::with_capacity(whale.len());
@@ -217,7 +215,7 @@ fn random_positional_move(
         random_whale_points.push(random_whale_i_cluster.clone());
 
         // A*D
-        a_vec.c[i] *= euclid_dist(&random_whale_i_cluster  , &whale_i_cluster);
+        a_vec.c[i] *= euclid_dist(&(random_whale_i_cluster*C[i])  , &whale_i_cluster);
 
     }
 
@@ -232,10 +230,8 @@ fn random_positional_move(
 fn spiral_move(
     whale: &mut Vec<Vec<f32>>, 
     best_whale:&Vec<Vec<f32>>,
-    rng: &mut StdRng
+    l: f32
 ){
-    let l:f32 = rng.gen_range(-1.0,1.0);
-
     let mut D:Vec<f32> = Vec::with_capacity(whale.len());
 
     let b = 1.0;
@@ -277,8 +273,8 @@ pub fn woa_clustering(
     let dim = data[0].dim();
     let mut rng = StdRng::seed_from_u64(seed);
 
-    // Define constants of the woa algoritm
-    let a_start = 2.0;
+    let mut best_solution_ever: Vec<usize> = Vec::new();
+    let mut best_score_ever: f32 = std::f32::MAX;
 
     // determine min and max for each component on the input data
 
@@ -328,7 +324,6 @@ pub fn woa_clustering(
         // for each set of clusters centers find the best solution
         // Iterate over the points searcvhing the nearest cluster and assing
         // it to the point
-        // TODO: If the solution is not valid generate a new solution
         for whale in &whales {
             whale_solutions.push(cluster_assignation(
                 whale,
@@ -352,19 +347,21 @@ pub fn woa_clustering(
         let whales_size = whales.len();
         let whales_copy = whales.clone();
 
-        for whale in &mut whales{
+        for whale in whales.iter_mut(){
 
             // Update a, A, C, l and p
             let r:f32 = rng.gen_range(0.0, 1.0);
 
-            let a = linear_scale(a_start, 0.0, current_evaluations, max_evaluations);
+            let a = linear_scale(2.0, current_evaluations, max_evaluations);
+            //println!("a val: {}", a);
 
             let a_vec = Point{c: vec![a; k as usize]};
             let A = a_vec.clone()*2.0*r - a_vec.clone();
             // here C is not a vector because is a constant vector always multiplied by another
-            let C:Vec<f32> = (0..k).map(|_x| 2.0*rng.gen_range(0.0, 1.0)).collect::<Vec<f32>>(); 
+            let cr = 2.0*rng.gen_range(0.0, 1.0);
+            let C:Vec<f32> = (0..k).map(|_x| cr ).collect::<Vec<f32>>(); 
 
-            println!("Norm of A matrix: {:?}", A.norm());
+            //println!("Norm of A matrix: {:?}", A.norm());
             // Compute p value
             if rng.gen::<f32>() < 0.5{
                 if A.norm() < 1.0{
@@ -375,11 +372,14 @@ pub fn woa_clustering(
                     );
                 }else{
                     let selected_whale_id:usize = rng.gen_range(0, whales_size);
-                    random_positional_move(whale, &whales_copy[selected_whale_id], &A);
+                    random_positional_move(whale, &whales_copy[selected_whale_id], &A, C);
                 }
             }else{
                 // l value is generated inside this function
-                spiral_move(whale, &best_whale, &mut rng);
+                let a2 =  -1.0 - current_evaluations as f32 * (-1.0/max_evaluations as f32);
+                let l = (a2 - 1.0) *rng.gen_range(0.0,1.0) + 1.0;
+
+                spiral_move(whale, &best_whale, l);
             }
         }
 
@@ -403,10 +403,22 @@ pub fn woa_clustering(
         //println!("Whales: {:?}", whales);
         //println!("Best solution {:?}", best_whale_solution);
         //println!("Score {}", calc_score(&best_whale_solution, data, rest, k, l));
-        println!("Current best score: {}", best_whale_score);
+
+        if best_whale_score < best_score_ever {
+            best_score_ever = best_whale_score;
+            best_solution_ever = best_whale_solution.clone();
+        }
+
+        if current_evaluations % 100 == 0{
+            println!("Current best score: {}. Current evaluations: {}", best_whale_score, current_evaluations);
+        }
+        
     }
     println!("Best solution {:?}", best_whale_solution);
     println!("Score {}", calc_score(&best_whale_solution, data, rest, k, l));
+
+    println!("Best solution ever {:?}", best_solution_ever.clone());
+    println!("Best score ever {}", best_score_ever);
 
     AlgResult {
         sol: None,
