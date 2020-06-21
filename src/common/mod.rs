@@ -193,7 +193,7 @@ pub fn calc_lambda(data: &Vec<Point>, rest: &Vec<Vec<i8>>) -> f32 {
     max_dist / n
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct HistoryPoint(pub f32);
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -205,7 +205,7 @@ pub struct AlgResult {
     pub time: Option<f32>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Output {
     pub sol: Vec<usize>,
     pub score: f32,

@@ -12,7 +12,7 @@ use std::fs::OpenOptions;
 
 use common::{calc_c_value_inf, calc_lambda, calc_score, AlgResult, Output, Point};
 use input_parsing::{read_points, read_restrictions};
-use woa::woa_clustering;
+use woa::{woa_clustering, woa_clustering_ls};
 
 fn main() {
     //let data: Vec<Array1<f32>> = read_points("/home/yabirgb/Documents/data/iris_set.dat");
@@ -66,9 +66,7 @@ fn main() {
 
 
     let mut nrestrictions: u32 = 10;
-    let start = Instant::now();
-    
-    let time = start.elapsed().as_secs_f32();
+
 
     let mut dataset_name = "unknow".to_string();
 
@@ -86,8 +84,11 @@ fn main() {
         nrestrictions = 20;
     }
 
-    result = woa_clustering(&data, &restrictions, k, l, seed, 50, 10000);
+    let start = Instant::now();
+    result = woa_clustering_ls(&data, &restrictions, k, l, seed, 10, 100000);
 
+    let time = start.elapsed().as_secs_f32();
+    
     let mut print = false;
 
     match result.sol {
@@ -125,6 +126,8 @@ fn main() {
                 .unwrap();
 
             serde_json::to_writer_pretty(file, &output).expect("Fail");
+            //println!("{:#?}", output);
+            println!("f: {}, c: {} , inf: {} ", output.score, output.c, output.inf);
         }
         None => println!("No solution found for {} with seed {}", dataset_name, seed),
     }
