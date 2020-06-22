@@ -1,6 +1,6 @@
 mod algorithm;
 mod soft_ls;
-pub use algorithm::{woa_clustering, woa_clustering_ls};
+pub use algorithm::{woa_clustering, woa_clustering_ls, woa_clustering_best_pool};
 pub use soft_ls::{ls_solve};
 
 pub fn valid_sol(sol: &Vec<usize>, k: u32) -> bool {
