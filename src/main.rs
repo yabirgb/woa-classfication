@@ -108,7 +108,7 @@ fn main() {
 
     match &args[6][..] {
         "woa" =>{
-            result = woa_clustering(&data, &restrictions, k, l, seed, 25 , 100000);
+            result = woa_clustering(&data, &restrictions, k, l, seed, 25 , 80000);
         }
         "woa-ls" =>{
             result = woa_clustering_ls(&data, &restrictions, k, l, seed, 25 , 100000);

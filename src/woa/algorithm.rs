@@ -41,7 +41,7 @@ fn calc_inf_delta(
 
     let mut inf = 0.0;
     for (pair, value) in rest[point_id].iter().enumerate(){
-        let contains = cluster_points.contains(&pair);
+        let contains = cluster_points[pair] == cluster_points[point_id];
         if *value == 1 && !contains{
             inf += 1.0
         }else if *value == -1 && contains{
@@ -68,7 +68,8 @@ fn cluster_assignation(
     // flag variable to detect changes in the assignations
 
     // Store related points in a hashmap
-    let mut clusters: Vec<Vec<usize>> = vec![Vec::new();k as usize];
+    let mut clusters: Vec<usize> = vec![(k+1) as usize; data.len()];
+    let mut cluster_points: Vec<usize> = vec![0;k as usize];
 
     for point_id in order.clone().iter(){
         // select the best cluster for this point in terms of
@@ -77,7 +78,7 @@ fn cluster_assignation(
 
 
         for i in 0..k{
-            diff_inf.push(calc_inf_delta(data, rest, *point_id, &clusters[i as usize]));
+            diff_inf.push(calc_inf_delta(data, rest, *point_id, &clusters));
         }
 
         // get min value from previous list
@@ -87,18 +88,18 @@ fn cluster_assignation(
 
         let mut cluster_candidates:Vec<usize> = Vec::new();
         for (id, cluster_score) in diff_inf.iter().enumerate(){
-            if clusters[id].len() == 0{
+            if cluster_points[id] == 0{
                 cluster_candidates.insert(0, id);
             }else if *cluster_score == *min_inf_delta {
                 cluster_candidates.push(id);
             }
-            
 
         }
 
 
-        if clusters[cluster_candidates[0]].len() == 0 || cluster_candidates.len() == 1{
-            clusters[cluster_candidates[0]].push(*point_id);
+        if cluster_points[cluster_candidates[0]] == 0 || cluster_candidates.len() == 1{
+            clusters[*point_id] = cluster_candidates[0];
+            cluster_points[cluster_candidates[0]]+=1;
         }else{
             // if we have more than one candidate choose the nearest one
             let mut distances: Vec<f32> = Vec::new();
@@ -121,7 +122,8 @@ fn cluster_assignation(
             }
 
             // add the point to the cluster list
-            clusters[best_cluster].push(*point_id);
+            clusters[*point_id] = best_cluster;
+            cluster_points[best_cluster]+=1;
             // mark the point as added
         }
 
@@ -129,22 +131,9 @@ fn cluster_assignation(
 
     }
 
-    let mut points_added = 0;
-
-    let mut solution:Vec<usize> = vec![0; data.len()];
-    //println!("Clusters? {:?}", clusters);
-    for (i, c) in clusters.iter().enumerate() {
-        assert_ne!(c.len(), 0);
-
-        for p in c.iter() {
-            solution[*p] = i;
-            points_added += 1;
-        }
-    }
-
-    assert_eq!(points_added, data.len());
-    assert!(valid_sol(&solution, k));
-    solution
+    //println!("{:?}", clusters);
+    assert!(valid_sol(&clusters, k));
+    clusters
 
 }
 

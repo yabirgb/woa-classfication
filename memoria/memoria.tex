@@ -1,7 +1,6 @@
-\documentclass[a4paper,11pt]{article}
+\documentclass[11pt]{article}
 \usepackage[spanish]{babel}
 \usepackage[utf8]{inputenc}
-\usepackage{geometry}
 \usepackage{booktabs}  
 \usepackage{graphicx} 
 \usepackage{listings}
@@ -9,13 +8,15 @@
 \usepackage{mathtools}
 \usepackage{float}
 
-\usepackage{geometry}
- \geometry{
- a4paper,
- total={170mm,257mm},
- left=20mm,
- top=20mm,
- }
+\usepackage
+[
+  a4paper,% other options: a3paper, a5paper, etc
+  left=1.7cm,
+  right=2cm,
+  top=3cm,
+  bottom=4cm,
+]
+{geometry}
 
 \lstset{%
 backgroundcolor=\color{cyan!10},
@@ -28,6 +29,16 @@ numbers=left,numberstyle=\scriptsize
 
 %\usepackage[wby]{callouts}
 \usepackage{hyperref}
+\usepackage{url}
+
+% pseudocode
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
 
 \title{Whale Optimziation Algorithm aplicado al problema de clustering}
 \author{Yábir García Benchakhtir}
@@ -71,11 +82,53 @@ puntos que no pueden pertenecer al mismo conjunto.
 
 Notaremos por $R = ML \cup CL$ al conjunto de restricciones del problema.
 
-Nos concentraremos en encontrar soluciones bajo restricciones
-\textit{fuertes} y restricciones \textit{débiles} a este
-problema. Bajo restricciones fuertes todas las restricciones deben
-cumplirse y bajo restricciones débiles intentaremos encontrar
-soluciones que minimicen el conjunto restricciones violadas.
+Nos concentraremos en encontrar soluciones bajo restricciones \textit{débiles} a
+este problema donde intentaremos encontrar soluciones que minimicen el conjunto
+restricciones violadas.
+
+En nuestros algoritmos intentaremos minimizar la distancia que haya
+entre los puntos de cada cluster sujeto a que se violen el menor
+número de restricciones. Vamos a formalizar pues esta idea,
+definimos el centroide de un cluster como el punto promedio de los
+puntos del cluster
+
+\[
+  \mu_i = \frac{1}{|c_i|}\sum_{x\in c_i}x \quad \text{ con } c_i \in \mathcal{C} \text{ para todo } i \in \{1,...k\}
+\]
+
+Definimos la distancia \textit{intra-cluster} como la media de las
+distancias de cada punto del cluster al centroide. En este caso
+consideramos la distancia euclidea.
+
+\[
+  \bar c_i = \frac{1}{|c_i|}\sum_{x\in c_i}||x-\mu_i||_2 \quad \text{ con } c_i \in \mathcal{C} \text{ para todo } i \in \{1,...k\}
+\]
+
+La desviación general del problema será por tanto
+
+\[
+  \bar C = \frac{1}{k}\sum_{c_i\in \mathcal{C}}\bar c_i
+\]
+
+Nuestro objetivo cuanto busquemos una solución con restricciones
+débiles será minimizar la desviación general sujeto a que "no
+incumplamos demasiadas restricciones". Para obtener un valor que le de
+mayor o menor relevancia a la cantidad de restricciones que
+incumplamos usaremos la siguiente proporción
+
+\[
+  \lambda = \frac{\lceil d \rceil}{|R|}
+\]
+
+donde $d$ es la mayor distancia entre puntos del conjunto de puntos
+$P$.  Así nuestro objetivo,cuando busquemos una solución con
+restricciones débiles, será minimizar
+
+\[
+  f = \bar C + \lambda * \text{infeasibility}
+\]
+
+donde \textit{infeasibility} es la cantidad de restricciones incumplidas.
 
 \section{Whale Optimziation Algorithm}
 
@@ -112,14 +165,23 @@ temporal $t$ que represneta el instante de tiempo en el que nos encontramos y
 que está limitado por una constante $T$ que fijamos nosotros. En cada instante 
 $t$ la mejor solución vendrá represnetada por $X^*$.
 
+Procedemos en primer lugar a definir el operador distancia entre dos ballenas
+
+\begin{align*}
+    ||\cdot||\colon & \mathbb{R}^n\times\mathbb{R}^n \to \mathbb{R}^n\\
+    & (<x_1, x_2, \dots, x_n>, <y_1, y_2, \dots, y_n>) \xmapsto{}<|x_1 - y_1|, |x_2-y_2|, \dots, |x_n-y_n|>
+\end{align*}
+
+que es la distancia coordenada a coordenada.
+
 El movimiento de caza se represneta por la modificación del vector agente
 mediante la expresión
 
-\[
-    X_i(t+1) = X^*(t) - A\cdot D_1   
-\]
+\begin{align}
+    X_i(t+1) = X^*(t) - A\cdot D_i^1  \label{eq:1}
+\end{align}
 
-donde $\cdot$ representa el producto componente a componente, $D$ viene dado por
+donde $\cdot$ representa el producto componente a componente de $\mathbb{R}^n$, $D$ viene dado por
 la expresión
 
 \[
@@ -134,27 +196,29 @@ y $A \text{ y } C$ se obtinen como
 \end{align*}
 
 con $r \in [0,1]^d$ un vector aleatorio y $a\in [0,2]^d$ constante que se hace
-decrecer de manera lineal a lo largo de los distintos pasos del algoritmo.
+decrecer de manera lineal a lo largo de los distintos pasos del algoritmo
+mediante la ecuación
+
+\[
+  a(t) = 2-2\frac{t}{\text{max\_evaluaciones}}  
+\]
 
 La técnica de \textit{caza} se basa en combinar este movimiento que nos
 proporciona un componente de exploración junto a la creación de una espiral 
 mediante la actualización del agente de acuerdo a la expresión 
 
-\[
+\begin{align}
 \begin{cases}
-    X_i(t+1) &= e^{bl}cos(2\pi l)D_2 \oplus X^* \\     
+    X_i(t+1) &= e^{bl}cos(2\pi l)D_2 + X^* \\
     D^2_i &= ||X^*(t)-X_i(t)||\\
-\end{cases}
-\]
+\end{cases}\label{eq:2}
+\end{align}
 
 siendo $b \in \mathbb{R}$ constante y $l \in [-1,1]$ aleatorio de manera que
 nos definen un radio para la espiral en cada instante. La notación $\oplus$ 
 se define como 
 
-\begin{align*}
-    \oplus\colon & \mathbb{R}\times\mathbb{R}^n \to \mathbb{R}^n\\
-    & (a, <x_1, x_2, \dots, x_n>) \xmapsto{}<ax_1, ax_2, \dots, ax_n>
-\end{align*}
+
 
 El movimiento de caza natural mezcla tanto los desplazamientos en linea recta
 como el comportamiento en espiral por lo que se introduce un factor aleatorio
@@ -191,5 +255,140 @@ Así cada agente (ballena) queda definido como
 \[
     X_i = <<c_{01},c_{02}, \dots c_{0d}>, \overset{(k)}{\dots}, <c_{k1},c_{k2},\dots c_{kd}>>    
 \]
+
+una lista de $k$ vectores con dimensión $d$, la dimensión de los puntos del
+problema. No obstante esto no es suficiente ya que nuestro objetivo final es 
+proporcionar una asignación de los puntos a cada cluster. 
+
+El algoritmo WOA se encargará de minimizar la componente real y continua de la
+métrica que estamos evaluando (que además tiene más peso en la misma), la
+distancia de los centroides respecto a los puntos de cada cluster. La segunda
+componente de la métrica es el factor de \textit{infeasibility} que
+minimizaremos asignando a cada punto el cluster que menos incremento en
+infeasibility produzca y, en caso de empate, el cluster más cercano.
+
+El comportamiento del algoritmo, como se muestra a continuación, es sencillo 
+
+\begin{algorithm}[H]
+  \caption{Whale optimization Algorithm}
+  \label{alg-lsearch}
+  \begin{algorithmic}[1]
+    \Procedure{WOA}{max\_evaluaciones}
+    \State whales: Inicializar un conjunto de ballenas con k centroides aleatorios
+    \State Evaluamos las diferentes ballenas usando nuestra métrica 
+    \State Selecccionamos $X^*$ la mejor ballena
+    \State Guardamos la mejor solución encontrada al problema
+    \State evaluaciones $\leftarrow$ 0
+    \While {evaluaciones $<$ max\_evaluaciones }
+    \State actualizamos el parametro $a$
+    \For{agente en la lista de ballenas}
+    \State Determianr $p$ y calcular  $A$ y $C$.
+    \If{$p<0.5$}
+    \If {$|A| < 1$}
+    \State Movemos la ballena usando el movimeinto rectilineo \eqref{eq:1}
+    \ElsIf {$|A|>1$} 
+    \State Movimiento rectilineo usando una ballena eleatorio
+    \EndIf
+    \Else
+    \State Movimiento en espiral utilizando \eqref{eq:2}
+    \EndIf
+    \EndFor 
+    \State Comprobar si alguna solución se ha salido de los limites del problema
+    \State Incremenetar evaluaciones en el número de evaluaciones correspondiente
+    \State Evaluar las soluciones encontradas y actualizar la mejor ballena 
+    \If{la mejor ballena es la mejor solución encontrada}
+    \State Actualizar la mejor solución encontrada hasta el momento
+    \EndIf
+    \EndWhile
+    \State
+    \Return Construir la solución asociada a la mejor ballena encontrada
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
+
+El algoritmo que, a partir de una ballena, nos permite crear una solución en el
+formato que hemos descrito es 
+
+
+\begin{algorithm}[H]
+  \caption{Generar una solución a partir de un conjunto de centroides}
+  \label{alg-lsearch}
+  \begin{algorithmic}[1]
+    \Procedure{Generar solución}{datos, restricciones, centroides}
+    \State clusters $\leftarrow [[]\dots[]]$  Lista con los puntos asociados a cada cluster
+    \For{cada punto $p$ del conjunto de datos}
+    \State Calcular el coste de infeasibility que supone asignar el punto a los diferentes clusters 
+    \State elegir $K = [k_0,\dots,k_s]$ los clusters que menor incremento de infeasibility suponen
+    \If {$K.size() == 1$}
+    \State Asignar $p$ al cluster $K[0]$
+    \Else
+    \State Calcular la dinstancia del punto $p$ al centro de cada cluster $k_i \in K$
+    \State Asignar $p$ al cluster más cercano
+    \EndIf
+    \EndFor
+    \State
+    \Return Construir la solución asociada a la mejor ballena encontrada
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
+
+\section{Implementación y desarrollo del experimento}
+
+La implementación del código ha sido realizada en el lenguaje de programación
+\textit{Rust} ya que ha sido el el usado durante el desarrollo de las anteriores
+prácticas, por lo que se ha podido reutilzar código y las ejecuciones han sido
+realizadas bajo las mismas optimzaciones en el lenguaje.
+
+Los experimentos han sido ejecutados en un ordenador con las siguientes
+características
+
+\begin{itemize}
+  \item CPU: Ryzen 5 2600 3.4GHz
+  \item RAM: 24GB
+  \item SO: Solus OS
+\end{itemize}
+
+Cada experimento consistente en la ejecución del algoritmo bajo 5 semillas
+distintas (37,42,440,699,752) de las que se han recopilado datos y se han
+agreado tomando medias. También se proporcionan en detalle los resultados para
+cada ejecución.
+
+El tamaño de la población como hemos estudiado para este tipo de problemas se
+recomienda entre 20 y 50 individuos. En mi caso he optado por fijar este valor a
+30 individuos a fin de obtener una primera idea del funcionamiento del
+algoritmo. El parametro $b$ de la espiral lo he fijado a 1 ya que es el valor
+que se fija en la versión implementada en MATLAB. Tras haber
+ejecutado el algoritmo los resultados son los siguientes.
+
+\input{tables/woa_10.tex}
+\input{tables/woa_20.tex}
+
+\section{Análisis de los resultados}
+
+En primer lugar vamos a proceder a comparar los resultados obtenidos con los
+resultados usando otros algoritmos 
+
+\begin{table}[H]
+  \centering
+  \resizebox{\textwidth}{!}{
+  \begin{tabular}{|l|l|l|l|l|l|l|l|l|l|l|l|l|}
+    \hline
+    & \multicolumn{3}{c}{Iris} & \multicolumn{3}{|c}{Ecoli} & \multicolumn{3}{|c}{Rand}& \multicolumn{3}{|c|}{Newthyroid} \\ \hline
+    & tasa C  & inf & score  & tasa C & inf & score & tasa C & inf  & score & tasa C & inf & score\\ \hline 
+    greedy & 1.800 & 355.8 & 4.057 & 44.613 & 1500.4 & 84.868  & 2.227 & 299.4 & 4.383 &13.160  &958.2 & 48.203\\ \hline
+    ls & 0.669 & 0.000  & 0.669 & 21.604 & 92.200 & 24.078 & 0.716  &0.000  &0.716  & 13.246  &24.4 & 14.138\\ \hline
+    es & 0.669 & 0.000  & 0.669 & 21.679 & 83.800 & 23.927 & 0.716  & 0.000 & 0.716 & 12.628  & 47.400 & 14.362  \\ \hline
+    bmb & 0.669 & 0.000  & 0.669 & 21.997 & 156.000 & 26.183 & 0.716  & 0.000 & 0.716 & 13.835	 & 6.000 & 14.054 \\ \hline
+    ils & 0.669 & 0.000  & 0.669 & 21.781 & 75.800 & 23.815	 & 0.716 & 0.000 & 0.716 & 13.835  & 6.000 & 14.054  \\ \hline
+    ils-es & 0.669 & 0.000  & 0.669 &  28.198 & 332.800	 & 37.127 & 0.716 & 0.000  & 0.716 &  13.835 & 6.000 & 14.054  \\ \hline
+    
+    woa & 0.666 & 75.800  & 0.906 &  13.050 & 2598.000 & 47.902 & 0.716 & 0.000  & 0.716 &  13.617 & 355.200 & 20.111  \\ \hline
+
+  \end{tabular}}
+  \caption{Resultados medios obtenidos para el problema del PAR con restricciones del 10\%}
+\end{table}
+
+%\bibliographystyle{abbrv}
+%\bibliography{refs}
 
 \end{document}
