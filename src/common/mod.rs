@@ -194,7 +194,7 @@ pub fn calc_lambda(data: &Vec<Point>, rest: &Vec<Vec<i8>>) -> f32 {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct HistoryPoint(pub f32);
+pub struct HistoryPoint(pub f32, pub f32);
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct AlgResult {

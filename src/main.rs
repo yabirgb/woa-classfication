@@ -8,6 +8,8 @@ mod woa;
 use std::env;
 use std::time::Instant;
 
+use std::fs;
+use std::io::Write;
 use std::fs::OpenOptions;
 
 use common::{calc_c_value_inf, calc_lambda, calc_score, AlgResult, Output, Point};
@@ -22,7 +24,7 @@ fn main() {
     //println!("{}", Norm::norm_l2(&data[0]));
 
     let args: Vec<String> = env::args().collect();
-    if args.len() < 6 {
+    if args.len() < 8 {
         println!("Número incorrecto de argumentos. Ejemplo de ejecución: ");
         println!("./par path_datos:str path_restricciones:str algoritmo:str n_clusters:u32 seed:u32 history:u32");
         return;
@@ -34,6 +36,24 @@ fn main() {
     let k: u32;
     let seed: u64;
     let mut history: bool = false;
+
+    let mut population: usize = 25;
+    let mut el_size: usize = 5;
+
+    match env::args().nth(7).and_then(|a| a.parse().ok()) {
+        Some(x) => population = x,
+        None => {
+            println!("No se ha podido leer correctamente la semilla");
+            println!("./par path_datos:str path_restricciones:str algoritmo:str n_clusters:u32 seed:u32 history:bool");
+            return;
+        }
+    }
+
+    match env::args().nth(8).and_then(|a| a.parse().ok()) {
+        Some(x) => el_size = x,
+        _ => {}
+    }
+
 
     match env::args().nth(3).and_then(|a| a.parse().ok()) {
         Some(x) => k = x,
@@ -85,7 +105,22 @@ fn main() {
     }
 
     let start = Instant::now();
-    result = woa_clustering_best_pool(&data, &restrictions, k, l, seed, 21 , 100000);
+
+    match &args[6][..] {
+        "woa" =>{
+            result = woa_clustering(&data, &restrictions, k, l, seed, 25 , 100000);
+        }
+        "woa-ls" =>{
+            result = woa_clustering_ls(&data, &restrictions, k, l, seed, 25 , 100000);
+        }
+        "woa-pool"=>{
+            result = woa_clustering_best_pool(&data, &restrictions, k, l, seed, 25, 5, 100000);
+        } 
+        _ =>{
+            result = woa_clustering_best_pool(&data, &restrictions, k, l, seed, 25 , 5, 100000);
+        } 
+    }
+    
 
     let time = start.elapsed().as_secs_f32();
     
@@ -114,18 +149,19 @@ fn main() {
             print = true;
 
             let path = format!(
-                "outputs/sol_{}_{}_{}_{}.json",
-                "woa", dataset_name, nrestrictions, seed
+                "outputs/sol_{}_{}_{}_{}_{}_{}.json",
+                &args[6][..], dataset_name, nrestrictions, seed, population, el_size
             );
             //println!("{}", serde_json::to_string_pretty(&result).unwrap());
-            let file = OpenOptions::new()
+            /*let file = OpenOptions::new()
                 .create(true)
                 .write(true)
                 .append(false)
                 .open(path)
                 .unwrap();
-
-            serde_json::to_writer_pretty(file, &output).expect("Fail");
+            */
+            let string = serde_json::to_string_pretty(&output).expect("Fail");
+            fs::write(path, &string).expect("Failed to write json");
             //println!("{:#?}", output);
             println!("f: {}, c: {} , inf: {} history: {}", output.score, output.c, output.inf, history);
         }

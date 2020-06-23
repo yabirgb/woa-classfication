@@ -3,7 +3,7 @@ use rand::Rng;
 use rand::SeedableRng;
 use rand::seq::SliceRandom;
 
-use crate::common::{Point, euclid_dist, AlgResult, calc_score};
+use crate::common::{Point, euclid_dist, AlgResult, calc_score, HistoryPoint};
 use super::{ls_solve, valid_sol};
 
 
@@ -296,6 +296,8 @@ pub fn woa_clustering(
     let dim = data[0].dim();
     let mut rng = StdRng::seed_from_u64(seed);
 
+    let mut history: Vec<HistoryPoint> = Vec::new();
+
     let mut best_solution_ever: Vec<usize> = Vec::new();
     let mut best_score_ever: f32 = std::f32::MAX;
 
@@ -368,9 +370,12 @@ pub fn woa_clustering(
         // for each sear agend
 
         let whales_size = whales.len();
-        let whales_copy = whales.clone();
+        //let whales_copy = whales.clone();
 
-        for whale in &mut whales{
+        let selected_whale_id:usize = rng.gen_range(0, whales_size);
+        let random_whale = whales[selected_whale_id].clone();
+
+        for whale in whales.iter_mut(){
 
             // Update a, A, C, l and p
             let r:f32 = rng.gen_range(0.0, 1.0);
@@ -393,8 +398,8 @@ pub fn woa_clustering(
                         C
                     );
                 }else{
-                    let selected_whale_id:usize = rng.gen_range(0, whales_size);
-                    random_positional_move(whale, &whales_copy[selected_whale_id], &A, C);
+                    //let selected_whale_id:usize = rng.gen_range(0, whales_size);
+                    random_positional_move(whale, &random_whale, &A, C);
                 }
             }else{
                 // l value is generated inside this function
@@ -422,28 +427,20 @@ pub fn woa_clustering(
             }
         }
 
-        //println!("Whales: {:?}", whales);
-        //println!("Best solution {:?}", best_whale_solution);
-        //println!("Score {}", calc_score(&best_whale_solution, data, rest, k, l));
-        //println!("Best whale id: {}", best_whale_id);
         if best_whale_score < best_score_ever {
             best_score_ever = best_whale_score;
             best_solution_ever = best_whale_solution.clone();
             println!("Best score ever {}", best_score_ever);
+            history.push(HistoryPoint(best_score_ever, current_evaluations as f32));
         }
         
     }
-    //println!("Best solution {:?}", best_whale_solution);
-    //println!("Score {}", calc_score(&best_whale_solution, data, rest, k, l));
-
-    //println!("Best solution ever {:?}", best_solution_ever.clone());
-    //println!("Best score ever {}", best_score_ever);
 
     AlgResult {
         sol: Some(best_solution_ever),
         score: best_score_ever,
         generations: None,
-        history: None,
+        history: Some(history),
         time: None,
     }
 
@@ -461,7 +458,9 @@ pub fn woa_clustering_ls(
 )->AlgResult
 {
 
-    let MAX_LS_EVALS:usize = 5000;
+    let MAX_LS_EVALS:usize = 2500;
+
+    let mut history: Vec<HistoryPoint> = Vec::new();
 
     let dim = data[0].dim();
     let mut rng = StdRng::seed_from_u64(seed);
@@ -538,7 +537,9 @@ pub fn woa_clustering_ls(
         // for each sear agend
 
         let whales_size = whales.len();
-        let whales_copy = whales.clone();
+        
+        let selected_whale_id:usize = rng.gen_range(0, whales_size);
+        let random_whale = whales[selected_whale_id].clone();
 
         for whale in &mut whales{
 
@@ -563,8 +564,7 @@ pub fn woa_clustering_ls(
                         C
                     );
                 }else{
-                    let selected_whale_id:usize = rng.gen_range(0, whales_size);
-                    random_positional_move(whale, &whales_copy[selected_whale_id], &A, C);
+                    random_positional_move(whale, &random_whale, &A, C);
                 }
             }else{
                 // l value is generated inside this function
@@ -595,61 +595,48 @@ pub fn woa_clustering_ls(
         //println!("Current best score prev ls {}", best_whale_score);
         //println!("Whales: {:?}", whales);
 
-        let mut new_whales: Vec<Vec<Vec<f32>>> = Vec::new();
-
         //println!("{:?}", whales);
 
-        for (whale_id, _whale) in whales.iter_mut().enumerate(){
-            let (ls_centroid, ls_solution, ls_score) = ls_solve(
-                &whale_solutions[whale_id],
-                step_scores[whale_id],
-                data,
-                rest,
-                k,
-                l,
-                MAX_LS_EVALS,
-                &mut rng
-            );
+        
+        let (ls_centroid, ls_solution, ls_score) = ls_solve(
+            &whale_solutions[best_whale_id],
+            step_scores[best_whale_id],
+            data,
+            rest,
+            k,
+            l,
+            MAX_LS_EVALS,
+            &mut rng
+        );
 
-            current_evaluations += MAX_LS_EVALS;
+        current_evaluations += MAX_LS_EVALS;
 
-            new_whales.push(ls_centroid);
-            //whale_solutions[whale_id] = ls_solution.clone();
-            if ls_score < best_whale_score{
-                best_whale_score = ls_score;
-                best_whale_solution = ls_solution.clone();
-            }
+        //whale_solutions[whale_id] = ls_solution.clone();
+        if ls_score < best_whale_score{
+            best_whale_score = ls_score;
+            best_whale_solution = ls_solution.clone();
         }
 
-        whales = new_whales.clone();
+        whales[best_whale_id] = ls_centroid;
+        
 
-        //println!("Best solution {:?}", best_whale_solution);
-        //println!("Score {}", calc_score(&best_whale_solution, data, rest, k, l));
-        //println!("Best whale id: {}", best_whale_id);
         if best_whale_score < best_score_ever {
             best_score_ever = best_whale_score;
             best_solution_ever = best_whale_solution.clone();
             println!("Best score ever {}", best_score_ever);
+            history.push(HistoryPoint(best_score_ever, current_evaluations as f32));
 
         }
 
-
-        //println!("Current best score after ls {}", best_whale_score);
-        //println!("Whales: {:?}", whales);
-
         
     }
-    //println!("Best solution {:?}", best_whale_solution);
-    //println!("Score {}", calc_score(&best_whale_solution, data, rest, k, l));
 
-    //println!("Best solution ever {:?}", best_solution_ever.clone());
-    //println!("Best score ever {}", best_score_ever);
     assert!(valid_sol(&best_solution_ever, k));
     AlgResult {
         sol: Some(best_solution_ever),
         score: best_score_ever,
         generations: Some(current_evaluations as u32),
-        history: None,
+        history: Some(history),
         time: None,
     }
 
@@ -663,12 +650,15 @@ pub fn woa_clustering_best_pool(
     l: f32,
     seed: u64,
     n_agents:usize,
+    el_size: usize,
     max_evaluations: usize
 )->AlgResult
 {
 
-    let MAX_LS_EVALS:usize = 5000;
-    let EL_SIZE = 5;
+    let MAX_LS_EVALS:usize = 5500;
+    let EL_SIZE = el_size;
+
+    let mut history: Vec<HistoryPoint> = Vec::new();
 
     let dim = data[0].dim();
     let mut rng = StdRng::seed_from_u64(seed);
@@ -849,6 +839,7 @@ pub fn woa_clustering_best_pool(
             best_solution_ever = best_whale_solution.clone();
             last_improvement = current_evaluations;
             println!("Best score ever {}", best_score_ever);
+            history.push(HistoryPoint(best_score_ever,current_evaluations as f32));
 
         }
     }
@@ -858,7 +849,7 @@ pub fn woa_clustering_best_pool(
         sol: Some(best_solution_ever),
         score: best_score_ever,
         generations: Some(current_evaluations as u32),
-        history: None,
+        history: Some(history),
         time: None,
     }
 
