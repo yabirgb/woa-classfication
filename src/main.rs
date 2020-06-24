@@ -14,7 +14,7 @@ use std::fs::OpenOptions;
 
 use common::{calc_c_value_inf, calc_lambda, calc_score, AlgResult, Output, Point};
 use input_parsing::{read_points, read_restrictions};
-use woa::{woa_clustering, woa_clustering_ls, woa_clustering_best_pool};
+use woa::{woa_clustering, woa_clustering_ls, woa_clustering_best_pool, woa_clustering_best_pool_shake};
 
 fn main() {
     //let data: Vec<Array1<f32>> = read_points("/home/yabirgb/Documents/data/iris_set.dat");
@@ -115,6 +115,9 @@ fn main() {
         }
         "woa-pool"=>{
             result = woa_clustering_best_pool(&data, &restrictions, k, l, seed, 25, 5, 100000);
+        } 
+        "woa-shake"=>{
+            result = woa_clustering_best_pool_shake(&data, &restrictions, k, l, seed, 25, 5, 100000);
         } 
         _ =>{
             result = woa_clustering_best_pool(&data, &restrictions, k, l, seed, 25 , 5, 100000);

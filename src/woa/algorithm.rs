@@ -447,7 +447,7 @@ pub fn woa_clustering_ls(
 )->AlgResult
 {
 
-    let MAX_LS_EVALS:usize = 2500;
+    let MAX_LS_EVALS:usize = 5000;
 
     let mut history: Vec<HistoryPoint> = Vec::new();
 
@@ -821,6 +821,277 @@ pub fn woa_clustering_best_pool(
                 whales[*whale_id] = new_whales[w].clone();
                 w += 1;
             }
+        }
+
+        if best_whale_score < best_score_ever {
+            best_score_ever = best_whale_score;
+            best_solution_ever = best_whale_solution.clone();
+            last_improvement = current_evaluations;
+            println!("Best score ever {}", best_score_ever);
+            history.push(HistoryPoint(best_score_ever,current_evaluations as f32));
+
+        }
+    }
+
+    assert!(valid_sol(&best_solution_ever, k));
+    AlgResult {
+        sol: Some(best_solution_ever),
+        score: best_score_ever,
+        generations: Some(current_evaluations as u32),
+        history: Some(history),
+        time: None,
+    }
+
+}
+
+
+#[allow(non_snake_case)]
+pub fn woa_clustering_best_pool_shake(
+    data: &Vec<Point>, 
+    rest: &Vec<Vec<i8>>, 
+    k: u32, 
+    l: f32,
+    seed: u64,
+    n_agents:usize,
+    el_size: usize,
+    max_evaluations: usize
+)->AlgResult
+{
+
+    let MAX_LS_EVALS:usize = 2500;
+    let EL_SIZE = el_size;
+    let MUTATE = 4;
+
+    let mut history: Vec<HistoryPoint> = Vec::new();
+
+    let dim = data[0].dim();
+    let mut rng = StdRng::seed_from_u64(seed);
+
+    let mut best_solution_ever: Vec<usize> = Vec::new();
+    let mut best_score_ever: f32 = std::f32::MAX;
+
+    // determine min and max for each component on the input data
+
+    let mut max = vec![std::f32::MIN; dim];
+    let mut min = vec![std::f32::MAX; dim];
+
+    for v in data {
+        for i in 0..v.dim() {
+            if max[i] < v.c[i] {
+                max[i] = v.c[i]
+            }
+            if min[i] > v.c[i] {
+                min[i] = v.c[i]
+            }
+        }
+    }
+
+    // vector with agents, the whales of the algorithm
+    // A list of agents
+    // that cointains a list of centroids
+    // that is a list of f32
+    let mut whales: Vec<Vec<Vec<f32>>> = Vec::with_capacity(n_agents);
+
+    // randomly initialize agents
+    for _j in 0..n_agents {
+        // generate dim random numbers
+        let mut whale: Vec<Vec<f32>> = Vec::with_capacity(k as usize);
+        for _i in 0..k{
+            let components: Vec<f32> = (0..dim).map(|i| rng.gen_range(min[i], max[i])).collect();
+            whale.push(components);
+        // add the centroid to the vec of centers
+        }
+        whales.push(whale);
+    }
+
+    let mut current_evaluations:usize = 0;
+    // when was the last evaluation where we saw an imrpovement in solution
+    let mut last_improvement: usize = 0;
+
+    // vector with the best solutions idss
+    let mut elite_solutions: Vec<usize>;
+    let mut best_whale_solution: Vec<usize>;
+
+    while current_evaluations < max_evaluations{
+
+        // Store for each whale an assignation of clusters
+        let mut whale_solutions: Vec<Vec<usize>> = Vec::with_capacity(n_agents);
+
+        // for each set of clusters centers find the best solution
+        // Iterate over the points searcvhing the nearest cluster and assing
+        // it to the point
+        for (id, whale) in whales.iter().enumerate() {
+            whale_solutions.push(cluster_assignation(
+                whale,
+                data,
+                rest,
+                k,
+                id as u64,
+                &mut rng
+            ));
+        }
+
+        // get id of the best whale beteween all the geneated solutions
+        let (best_whale_id, mut best_whale_score, step_scores) = find_best_whale(&whale_solutions, data, rest, k, l, &mut current_evaluations);
+
+        // update the list of elite solutions
+        elite_solutions = top_n_elements(&step_scores, EL_SIZE);
+
+        let best_whale = whales[best_whale_id].clone();
+        best_whale_solution = whale_solutions[best_whale_id].clone();
+
+        // for each search agent
+        let whales_size = whales.len();
+        let whales_copy = whales.clone();
+
+        for whale in &mut whales{
+
+            // Update a, A, C, l and p
+            let r:f32 = rng.gen_range(0.0, 1.0);
+
+            let a = linear_scale(2.0, current_evaluations, max_evaluations);
+            //println!("a val: {}", a);
+
+            let a_vec = Point{c: vec![a; k as usize]};
+            let A = a_vec.clone()*2.0*r - a_vec.clone();
+            // here C is not a vector because is a constant vector always multiplied by another
+            let C:Vec<f32> = (0..k).map(|_x|  2.0*rng.gen_range(0.0, 1.0)).collect::<Vec<f32>>(); 
+
+            //println!("Norm of A matrix: {:?}", A.norm());
+            // Compute p value
+            if rng.gen::<f32>() < 0.5{
+                if A.norm() < 1.0{
+                    // select a whale from the EL pool
+                    let selected_whale_id:usize = rng.gen_range(0, EL_SIZE);
+                    positional_move(whale,
+                        &whales_copy[selected_whale_id],
+                        A,
+                        C
+                    );
+                }else{
+                    let selected_whale_id:usize = rng.gen_range(0, whales_size);
+                    random_positional_move(whale, &whales_copy[selected_whale_id], &A, C);
+                }
+            }else{
+                // l value is generated inside this function
+                let a2 =  -1.0 - current_evaluations as f32 * (-1.0/max_evaluations as f32);
+                let l = (a2 - 1.0) *rng.gen_range(0.0,1.0) + 1.0;
+                let selected_whale_id:usize = rng.gen_range(0, whales_size);
+                spiral_move(whale, &whales_copy[selected_whale_id], l);
+                //let l = rng.gen_ra.enumerate()
+            }
+        }
+        // re-enter whales that have gone aoutside the boundaries
+
+        for whale in &mut whales{
+            for cluster in whale.iter_mut(){
+                for (i, max_cord) in max.iter().enumerate() {
+                    if cluster[i] > *max_cord{
+                        cluster[i] = *max_cord;
+                    }
+                }
+                for (i, min_cord) in min.iter().enumerate() {
+                    if cluster[i] < *min_cord{
+                        cluster[i] = *min_cord;
+                    }
+                }
+            }
+        }
+
+        //println!("Current best score prev ls {}", best_whale_score);
+        //println!("Whales: {:?}", whales);
+
+        // apply intensification to the search if there has been no improvement in a long term
+        // but only to the top list
+
+        if current_evaluations - last_improvement > 1000{
+
+            if rng.gen::<f32>() < 0.5{
+                for _i in 0..MUTATE{
+                    
+                    // select the whale to mutate
+                    let mut whale_selected:usize = rng.gen_range(0, whales.len());
+                    // select a random whale
+                    let random_whale:Vec<Vec<f32>> = whales[elite_solutions[rng.gen_range(0, elite_solutions.len())]].clone();
+
+                    // choose how many centers to modify
+                    let centers_to_mutate:usize = rng.gen_range(0, whales[0].len());
+
+                    let mut to_mutate:Vec<usize> = (0..whales[0].len()).collect();
+                    to_mutate.shuffle(&mut rng);
+                    to_mutate.truncate(centers_to_mutate);
+
+                    for center in to_mutate{
+                        for (j, coord) in random_whale[center].iter().enumerate(){
+                            whales[whale_selected][center][j] = -coord;
+                        }
+                    }
+                    
+                }
+
+            }else{
+
+                for _i in 0..MUTATE{
+                    
+                    // select the whale to mutate
+                    let mut whale_selected:usize = rng.gen_range(0, whales.len());
+                    // select a random whale
+                    let random_whale:Vec<Vec<f32>> = whales[rng.gen_range(0, whales.len())].clone();
+
+                    // choose how many centers to modify
+                    let centers_to_mutate:usize = rng.gen_range(0, whales[0].len());
+
+                    let mut to_mutate:Vec<usize> = (0..whales[0].len()).collect();
+                    to_mutate.shuffle(&mut rng);
+                    to_mutate.truncate(centers_to_mutate);
+
+                    for center in to_mutate{
+                        for (j, coord) in random_whale[center].iter().enumerate(){
+                            whales[whale_selected][center][j] = -coord;
+                        }
+                    }
+                    
+                }
+
+
+
+
+
+            }
+
+            for whale in &mut whales{
+                for cluster in whale.iter_mut(){
+                    for (i, max_cord) in max.iter().enumerate() {
+                        if cluster[i] > *max_cord{
+                            cluster[i] = *max_cord;
+                        }
+                    }
+                    for (i, min_cord) in min.iter().enumerate() {
+                        if cluster[i] < *min_cord{
+                            cluster[i] = *min_cord;
+                        }
+                    }
+                }
+            }
+
+            let mut whale_solutions: Vec<Vec<usize>> = Vec::with_capacity(n_agents);
+
+            // for each set of clusters centers find the best solution
+            // Iterate over the points searcvhing the nearest cluster and assing
+            // it to the point
+            for (id, whale) in whales.iter().enumerate() {
+                whale_solutions.push(cluster_assignation(
+                    whale,
+                    data,
+                    rest,
+                    k,
+                    id as u64,
+                    &mut rng
+                ));
+            }
+
+            let (best_whale_id, mut best_whale_score, step_scores) = find_best_whale(&whale_solutions, data, rest, k, l, &mut current_evaluations);
+   
         }
 
         if best_whale_score < best_score_ever {

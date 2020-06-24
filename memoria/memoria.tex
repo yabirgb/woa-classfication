@@ -1,6 +1,8 @@
 \documentclass[11pt]{article}
 \usepackage[spanish]{babel}
 \usepackage[utf8]{inputenc}
+\usepackage[nottoc]{tocbibind}
+
 \usepackage{booktabs}  
 \usepackage{graphicx} 
 \usepackage{listings}
@@ -332,6 +334,87 @@ formato que hemos descrito es
   \end{algorithmic}
 \end{algorithm}
 
+Por último describimos en pseudocódigo las funciones que nos permiten evaluar
+las soluciones que obtengamos en los distintos experimentos que se han realizado
+
+\begin{algorithm}[H]
+  \caption{Calcular el valor de infeasibility para una solución}
+  \label{alg-inf}
+  \begin{algorithmic}[1]
+    \Procedure{calc\_infeasibility(solucion, restricciones)}{}
+    \State inf = 0
+    \For {$c_i \in \text{sol}$ }
+    \State R = Comprobar las relaciones de $c_i$ con el resto de elementos $c_j$ de su cluster
+    \For {relacion en R}
+    \If {deberían estar juntos y no lo están o están en el mismo cluster sin deberlo }
+    \State inf += 1
+    \EndIf
+    \EndFor
+    \EndFor
+    \State return inf
+    \EndProcedure
+  \end{algorithmic}
+  \end{algorithm}
+  
+para calcular el valor de desviación instracluster
+  
+  \begin{algorithm}[H]
+  \caption{Calcular la desviación intracluster}
+  \label{alg-intra}
+  \begin{algorithmic}[1]
+    \Procedure{calc\_c(solucion, puntos, k)}{}
+    \State centros = [centros para cada cluster 0...k ]
+    \State num = [número de elementos de cada cluster 0...k]
+    \State inner = [distancia intra cluster 0...k] inicializado a 0
+    \For {i,c $\in$ enumerate(solucion)}
+    \State inner[c] += norma\_l2(puntos[i]-centros[c])
+    \EndFor
+    \State inner = inner/num
+    \State return sum(inner)/k
+    \EndProcedure
+  \end{algorithmic}
+  \end{algorithm}
+  
+  
+  también nos hará falta un metodo para calcular lo que en la
+  descripción del problema hemos llamado $\lambda$.
+  
+  \begin{algorithm}[H]
+  \caption{Calcular el valor de $\lambda$ para el problema}
+  \label{alg-lambda}
+  \begin{algorithmic}[1]
+    \Procedure{calc\_lambda(data: conjunto de puntos, rest: matriz de restricciones)}{}
+    \State max\_dist $\leftarrow$ 0 
+    \For {u $\in$ data}
+    \For {v $\in$ data}
+    \State d $\leftarrow$ norm 2 of u - v
+    \If {d > max\_dist}
+    \State max\_dist = d
+    \EndIf
+    \EndFor
+    \EndFor
+    \State n $\leftarrow$ contar el número de restricciones no cero
+    \State // Eliminamos la diagonal y los puntos duplicados
+    \State n $\leftarrow$ (n-rest.size)/2
+    \State \Return max\_dist/k
+    \EndProcedure
+  \end{algorithmic}
+  \end{algorithm}
+  
+  
+  La función \textit{score} que nos permite evaluar una
+  solución sería
+  
+  \begin{algorithm}[H]
+  \caption{Calcular el score de una solución}
+  \label{score}
+  \begin{algorithmic}[1]
+    \Procedure{calc\_score(sol: Solution, data: conjunto de puntos, rest: matriz de restricciones)}{}
+    \State \Return calc\_c(sol, puntos, k) + calc\_lambda(data, rest) * calc\_infeasibility(sol, rest)
+    \EndProcedure
+  \end{algorithmic}
+  \end{algorithm}
+
 \section{Implementación y desarrollo del experimento}
 
 La implementación del código ha sido realizada en el lenguaje de programación
@@ -366,7 +449,22 @@ ejecutado el algoritmo los resultados son los siguientes.
 \section{Análisis de los resultados}
 
 En primer lugar vamos a proceder a comparar los resultados obtenidos con los
-resultados usando otros algoritmos 
+resultados usando otros algoritmos desarrollados durante el curso. La lista de
+algoritmos con la que vamos a comparar es 
+
+\begin{itemize}
+  \item greedy: Versión greedy
+  \item ls: Busqueda local 
+  \item age-fs: Algoritmo genético estacionario con cruce de segmento fijo 
+  \item age-u: Algoritmo genético estacionario con cruce uniforme
+  \item agg-fs: Algoritmo genético generacional con cruce de segmento fijo 
+  \item agg-u: Algoritmo genético generacional con cruce uniforme
+  \item am-*: Algoritmo memético en diferentes variantes de los paráemtros 
+  \item es: Enfriamiento simulado
+  \item bmb: Busqueda multiarranque básica
+  \item ils: Búsqueda local iterativa
+  \item ils-es: Búsqueda local iterativa con enfriamiento simulado
+\end{itemize}
 
 \begin{table}[H]
   \centering
@@ -377,18 +475,516 @@ resultados usando otros algoritmos
     & tasa C  & inf & score  & tasa C & inf & score & tasa C & inf  & score & tasa C & inf & score\\ \hline 
     greedy & 1.800 & 355.8 & 4.057 & 44.613 & 1500.4 & 84.868  & 2.227 & 299.4 & 4.383 &13.160  &958.2 & 48.203\\ \hline
     ls & 0.669 & 0.000  & 0.669 & 21.604 & 92.200 & 24.078 & 0.716  &0.000  &0.716  & 13.246  &24.4 & 14.138\\ \hline
+    age-fs & 0.669 & 0.000 & 0.669  & 21.291 &94.000  & 23.813 & 0.716  & 0.000 &0.716  &12.043  & 63.600 & 14.369\\ \hline
+    age-u & 0.669 & 0.000 & 0.669 & 21.622 & 97.800 & 24.246 & 0.716 & 0.000 & 0.716 &12.038 & 67.000  &14.488\\ \hline
+    agg-fs & 0.671	 & 4.000 & 0.696 & 22.855  & 146.60  & 26.788 & 0.723  & 4.200 & 0.753 &13.835  & 6.000 &14.054 \\ \hline
+    agg-u & 0.669 & 0.000  & 0.669 & 22.617  & 141.80 & 26.422 & 0.716 & 0.000 & 0.716 & 12.645 & 51.800 &14.539\\ \hline
+    am-01 & 0.669 & 0.000 & 0.669  &23.726  & 98.200  & 26.360 & 0.716 &0.000  & 0.716	 & 12.037 & 68.200 &14.531\\ \hline
+    am-all & 0.671 & 1.800 & 0.682 & 22.759 & 97.600 & 25.377 &0.719  & 1.000 & 0.727 &12.036  & 61.200& 14.275\\ \hline
+    am-top-01 & 0.669  & 0.000 & 0.669 & 21.929 & 125.00 &25.283  & 0.716	 &0.000  &0.716  & 12.070&65.800 &14.476 \\ \hline
     es & 0.669 & 0.000  & 0.669 & 21.679 & 83.800 & 23.927 & 0.716  & 0.000 & 0.716 & 12.628  & 47.400 & 14.362  \\ \hline
     bmb & 0.669 & 0.000  & 0.669 & 21.997 & 156.000 & 26.183 & 0.716  & 0.000 & 0.716 & 13.835	 & 6.000 & 14.054 \\ \hline
     ils & 0.669 & 0.000  & 0.669 & 21.781 & 75.800 & 23.815	 & 0.716 & 0.000 & 0.716 & 13.835  & 6.000 & 14.054  \\ \hline
     ils-es & 0.669 & 0.000  & 0.669 &  28.198 & 332.800	 & 37.127 & 0.716 & 0.000  & 0.716 &  13.835 & 6.000 & 14.054  \\ \hline
-    
-    woa & 0.666 & 75.800  & 0.906 &  13.050 & 2598.000 & 47.902 & 0.716 & 0.000  & 0.716 &  13.617 & 355.200 & 20.111  \\ \hline
+    woa & 0.667 	 & 40.200  & 0.922 &  13.065 & 1289.600 & 47.664 & 0.716 & 0.000  & 0.716 &  13.650 & 197.800  &  	20.883 \\ \hline
+
 
   \end{tabular}}
   \caption{Resultados medios obtenidos para el problema del PAR con restricciones del 10\%}
 \end{table}
 
-%\bibliographystyle{abbrv}
-%\bibliography{refs}
+\begin{table}[H]
+  \centering
+  \resizebox{\textwidth}{!}{
+  \begin{tabular}{|l|l|l|l|l|l|l|l|l|l|l|l|l|}
+    \hline
+    & \multicolumn{3}{c}{Iris} & \multicolumn{3}{|c}{Ecoli} & \multicolumn{3}{|c}{Rand}& \multicolumn{3}{|c|}{Newthyroid} \\ \hline
+    & tasa C  & inf & score  & tasa C & inf & score & tasa C & inf  & score & tasa C & inf & score\\ \hline 
+    greedy &1.686  &690.4  &3.874  &44.953  &3166.6  & 87.433 & 2.332 & 667.8  & 4.735 & 13.200 &2056.4  & 50.795 \\ \hline
+    ls & 0.669 & 0.000 & 0.669 & 21.828 & 167.6 &24.076  &  0.716  & 0.000 & 0.716  &12.215  &152.0  & 14.994 \\ \hline
+    age-fs &0.669  & 0.000 &0.669  &22.000	  &158.200  & 24.122 &0.716  & 0.000  & 0.716 & 12.896  &95.80  & 14.647  \\ \hline
+    age-u& 0.669 & 0.000 & 0.669 & 21.346 & 194.400 & 23.954 & 0.716 & 0.000  & 0.716 & 12.911 &97.00  & 14.684 \\ \hline
+    agg-fs& 0.675 & 8.600 & 0.702 & 22.330 &192.800  & 24.916 & 0.737 & 13.00  & 0.783  &12.908	  & 98.0 & 14.699  \\ \hline
+    agg-u&0.669  & 0.000 &0.669  &22.607  &209.400  &25.416  &0.716  & 0.000 & 0.716 &12.744  &151.20  & 15.508  \\ \hline
+    am-01& 0.669 & 0.000 & 0.669 & 22.186 & 211.400 &25.021  & 0.716 & 0.000  & 0.716 &13.026  &152.00  & 15.805 \\ \hline
+    am-all& 0.676 & 5.000 &0.692  &21.965  & 160.400 & 24.116 & 0.720 & 4.800 & 0.738 &12.893  & 91.80 & 14.572 \\ \hline
+    am-top-01&0.669  & 0.000 &0.669  &22.986  & 201.200  &25.685  & 0.716 & 0.000 & 0.716 &12.453  &156.8  & 15.320 \\ \hline
+    es & 0.669 & 0.000  & 0.669 & 21.849 & 	179.000 & 24.250 &  0.716	 & 0.000 & 0.716 & 12.206 & 159.000 & 15.112 \\ \hline
+    bmb & 0.669 & 0.000  & 0.669 & 22.428	  & 224.400	 & 25.439 &  0.716 & 0.000 & 0.716 & 14.287 & 0.000 & 14.287 \\ \hline
+    ils & 0.669 & 0.000  & 0.669 &  21.826 & 182.400 & 24.273	 & 0.716 & 0.000 & 0.716 & 14.287 & 0.000 & 14.287 \\ \hline
+    ils-es & 0.669 & 0.000  & 0.669 & 28.232  & 	646.400 & 36.903 &  0.716 & 0.000 & 0.716 & 14.287 & 0.000 & 14.287 \\ \hline
+    woa & 0.666 & 75.800  & 0.906 &  13.050 & 2598.000 & 47.902 & 0.716 & 0.000  & 0.716 &  13.617 & 355.200 & 20.111  \\ \hline
+
+  \end{tabular}}
+  \caption{Resultados medios obtenidos para el problema del PAR con restricciones del 20\%}
+\end{table}
+
+Viendo estos resultados comprobamos como el algoritmo efectivamente hace un buen
+trabajo reduciendo la distancia intracluster que era la parte que optimizaba el
+algoritmo pero sin embargo la solución empeora de manera considerable a que la
+asignación que se hace de los puntos proboca que se incumplan muchas restricciones.
+
+También como se muestra en este historico de datos generado para el problema de
+ecoli con un 10\% de restricciones se encuentran de manera sucesiva mejores
+soluciones en etapas tempranas de la ejecución pero después la calidad de las
+soluciones no mejora de manera considerable aún estando lejos del óptimo conocido. 
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{images/evolution}
+  \caption{Evolución de la función objetivo en función del número de evaluaciones}
+\end{figure}
+  
+
+Este comportamiento se explica ya que los agentes de la búsqueda comienzan a
+desplazarse en entornos cercanos a ellos y no exploran realmente el espacio de
+búsqueda de manera eficiente. 
+
+Una primera solución que planteo al problema es la hibridación con una búsqueda
+local. El motivo es que los centroides creados ya optimizan bien la distancia de
+los centros a los puntos pero no el valor de infeasibility. Con una búsqueda
+local podemos modificar las soluciones de manera que se mejore el factor de
+infeasibility y se mantengan buenos resultados.
+
+\section{Modificación I: Busqueda local}
+
+\subsection{Descripción de los cambios}
+
+Como se ha comentado anteriormente he decidido hibridar el algoritmo con una
+búsqueda local para mejorar el factor de infeasibility en las soluciones. He
+decidido reutilizar la búsqueda local que hemos utilizado en otras prácticas y
+que queda descrita en el siguiente código.
+
+\begin{algorithm}[H]
+  \caption{Aplicación de la búsqueda local al problema de clustering con restricciones}
+  \label{alg-lsearch}
+  \begin{algorithmic}[1]
+    \Procedure{solve}{}
+    \State clusters = \{1,2,\dots k\}
+    \State solucion = $<s_1,s_2, \dots,s_n>$
+    \State saltos = 0
+    \State l = computeLambda(points, restrictions)
+    \State cambiosPosibles = $<(id,nuevo\_c)>$
+    \For{ $i \in \mathbb{Z}^+ : i \leq \text{max\_iters}$ }
+    \If {size(cambiosPosibles) = 0}
+    \State return solucion, infeasibility, tasac, puntuacion
+    \EndIf
+    \State j,c = Pop(cambiosPosibles)
+    \State newSol = solucion where $solucion[j]\rightarrow c$
+    \State Comprobar que la solución no deja ningun cluster vacio
+    \If {$score(newSol) < \text{score actual}$}
+    \State solucion = newSol
+    \State actualizar score actual
+    \State crear nueva permutacion de cambios
+    \State saltos += 1
+    \EndIf
+    \EndFor
+    \State Calcular centroides a partir de la solución 
+    \State 
+    \Return centroides, solución, puntuación
+    \EndProcedure
+  \end{algorithmic}
+  \end{algorithm}
+
+En nuestro algoritmo introduciremos al final de cada iteración del mismo una
+pequeña búsqueda local al mejor de los agentes. La idea con esto es que la
+ballena guía mejore y arrastre al resto con ellas. La actualización del
+pseudocódigo sería la siguiente
+
+
+\begin{algorithm}[H]
+  \caption{Whale optimization Algorithm + LS}
+  \label{alg-lsearch}
+  \begin{algorithmic}[1]
+    \Procedure{WOA-LS}{max\_evaluaciones}
+    \State whales: Inicializar un conjunto de ballenas con k centroides aleatorios
+    \State Evaluamos las diferentes ballenas usando nuestra métrica 
+    \State Selecccionamos $X^*$ la mejor ballena
+    \State Guardamos la mejor solución encontrada al problema
+    \State evaluaciones $\leftarrow$ 0
+    \While {evaluaciones $<$ max\_evaluaciones }
+    \State actualizamos el parametro $a$
+    \For{agente en la lista de ballenas}
+    \State Determianr $p$ y calcular  $A$ y $C$.
+    \If{$p<0.5$}
+    \If {$|A| < 1$}
+    \State Movemos la ballena usando el movimeinto rectilineo \eqref{eq:1}
+    \ElsIf {$|A|>1$} 
+    \State Movimiento rectilineo usando una ballena eleatorio
+    \EndIf
+    \Else
+    \State Movimiento en espiral utilizando \eqref{eq:2}
+    \EndIf
+    \EndFor 
+    \State Comprobar si alguna solución se ha salido de los limites del problema
+    \State Incremenetar evaluaciones en el número de evaluaciones correspondiente
+    \State Evaluar las soluciones encontradas y actualizar la mejor ballena 
+    \State Aplicar busqueda local a la mejor ballena encontrada
+    \If{la mejor ballena es la mejor solución encontrada}
+    \State Actualizar la mejor solución encontrada hasta el momento
+    \EndIf
+    \EndWhile
+    \State
+    \Return Construir la solución asociada a la mejor ballena encontrada
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
+
+\subsection{Experimentación}
+
+Volviendo a ejectuar el conjunto de tests con la nueva implementación obtenemos
+los siguientes resultados
+
+\input{tables/woa-ls_10.tex}
+\input{tables/woa-ls_20.tex}
+
+\subsection{Análisis}
+
+\begin{table}[H]
+  \centering
+  \resizebox{\textwidth}{!}{
+  \begin{tabular}{|l|l|l|l|l|l|l|l|l|l|l|l|l|}
+    \hline
+    & \multicolumn{3}{c}{Iris} & \multicolumn{3}{|c}{Ecoli} & \multicolumn{3}{|c}{Rand}& \multicolumn{3}{|c|}{Newthyroid} \\ \hline
+    & tasa C  & inf & score  & tasa C & inf & score & tasa C & inf  & score & tasa C & inf & score\\ \hline 
+    greedy & 1.800 & 355.8 & 4.057 & 44.613 & 1500.4 & 84.868  & 2.227 & 299.4 & 4.383 &13.160  &958.2 & 48.203\\ \hline
+    ls & 0.669 & 0.000  & 0.669 & 21.604 & 92.200 & 24.078 & 0.716  &0.000  &0.716  & 13.246  &24.4 & 14.138\\ \hline
+    age-fs & 0.669 & 0.000 & 0.669  & 21.291 &94.000  & 23.813 & 0.716  & 0.000 &0.716  &12.043  & 63.600 & 14.369\\ \hline
+    age-u & 0.669 & 0.000 & 0.669 & 21.622 & 97.800 & 24.246 & 0.716 & 0.000 & 0.716 &12.038 & 67.000  &14.488\\ \hline
+    agg-fs & 0.671	 & 4.000 & 0.696 & 22.855  & 146.60  & 26.788 & 0.723  & 4.200 & 0.753 &13.835  & 6.000 &14.054 \\ \hline
+    agg-u & 0.669 & 0.000  & 0.669 & 22.617  & 141.80 & 26.422 & 0.716 & 0.000 & 0.716 & 12.645 & 51.800 &14.539\\ \hline
+    am-01 & 0.669 & 0.000 & 0.669  &23.726  & 98.200  & 26.360 & 0.716 &0.000  & 0.716	 & 12.037 & 68.200 &14.531\\ \hline
+    am-all & 0.671 & 1.800 & 0.682 & 22.759 & 97.600 & 25.377 &0.719  & 1.000 & 0.727 &12.036  & 61.200& 14.275\\ \hline
+    am-top-01 & 0.669  & 0.000 & 0.669 & 21.929 & 125.00 &25.283  & 0.716	 &0.000  &0.716  & 12.070&65.800 &14.476 \\ \hline
+    es & 0.669 & 0.000  & 0.669 & 21.679 & 83.800 & 23.927 & 0.716  & 0.000 & 0.716 & 12.628  & 47.400 & 14.362  \\ \hline
+    bmb & 0.669 & 0.000  & 0.669 & 21.997 & 156.000 & 26.183 & 0.716  & 0.000 & 0.716 & 13.835	 & 6.000 & 14.054 \\ \hline
+    ils & 0.669 & 0.000  & 0.669 & 21.781 & 75.800 & 23.815	 & 0.716 & 0.000 & 0.716 & 13.835  & 6.000 & 14.054  \\ \hline
+    ils-es & 0.669 & 0.000  & 0.669 &  28.198 & 332.800	 & 37.127 & 0.716 & 0.000  & 0.716 &  13.835 & 6.000 & 14.054  \\ \hline
+    woa & 0.667 	 & 40.200  & 0.922 &  13.065 & 1289.600 & 47.664 & 0.716 & 0.000  & 0.716 &  13.650 & 197.800  &  	20.883 \\ \hline
+    woa-ls & 0.669 & 0.000  & 0.669 &  19.663 & 356.000  & 29.215 & 0.716 & 0.000  & 0.716 &   	 	13.835 & 6.000 &  	14.054  \\ \hline
+
+
+  \end{tabular}}
+  \caption{Resultados medios obtenidos para el problema del PAR con restricciones del 10\%}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \resizebox{\textwidth}{!}{
+  \begin{tabular}{|l|l|l|l|l|l|l|l|l|l|l|l|l|}
+    \hline
+    & \multicolumn{3}{c}{Iris} & \multicolumn{3}{|c}{Ecoli} & \multicolumn{3}{|c}{Rand}& \multicolumn{3}{|c|}{Newthyroid} \\ \hline
+    & tasa C  & inf & score  & tasa C & inf & score & tasa C & inf  & score & tasa C & inf & score\\ \hline 
+    greedy &1.686  &690.4  &3.874  &44.953  &3166.6  & 87.433 & 2.332 & 667.8  & 4.735 & 13.200 &2056.4  & 50.795 \\ \hline
+    ls & 0.669 & 0.000 & 0.669 & 21.828 & 167.6 &24.076  &  0.716  & 0.000 & 0.716  &12.215  &152.0  & 14.994 \\ \hline
+    age-fs &0.669  & 0.000 &0.669  &22.000	  &158.200  & 24.122 &0.716  & 0.000  & 0.716 & 12.896  &95.80  & 14.647  \\ \hline
+    age-u& 0.669 & 0.000 & 0.669 & 21.346 & 194.400 & 23.954 & 0.716 & 0.000  & 0.716 & 12.911 &97.00  & 14.684 \\ \hline
+    agg-fs& 0.675 & 8.600 & 0.702 & 22.330 &192.800  & 24.916 & 0.737 & 13.00  & 0.783  &12.908	  & 98.0 & 14.699  \\ \hline
+    agg-u&0.669  & 0.000 &0.669  &22.607  &209.400  &25.416  &0.716  & 0.000 & 0.716 &12.744  &151.20  & 15.508  \\ \hline
+    am-01& 0.669 & 0.000 & 0.669 & 22.186 & 211.400 &25.021  & 0.716 & 0.000  & 0.716 &13.026  &152.00  & 15.805 \\ \hline
+    am-all& 0.676 & 5.000 &0.692  &21.965  & 160.400 & 24.116 & 0.720 & 4.800 & 0.738 &12.893  & 91.80 & 14.572 \\ \hline
+    am-top-01&0.669  & 0.000 &0.669  &22.986  & 201.200  &25.685  & 0.716 & 0.000 & 0.716 &12.453  &156.8  & 15.320 \\ \hline
+    es & 0.669 & 0.000  & 0.669 & 21.849 & 	179.000 & 24.250 &  0.716	 & 0.000 & 0.716 & 12.206 & 159.000 & 15.112 \\ \hline
+    bmb & 0.669 & 0.000  & 0.669 & 22.428	  & 224.400	 & 25.439 &  0.716 & 0.000 & 0.716 & 14.287 & 0.000 & 14.287 \\ \hline
+    ils & 0.669 & 0.000  & 0.669 &  21.826 & 182.400 & 24.273	 & 0.716 & 0.000 & 0.716 & 14.287 & 0.000 & 14.287 \\ \hline
+    ils-es & 0.669 & 0.000  & 0.669 & 28.232  & 	646.400 & 36.903 &  0.716 & 0.000 & 0.716 & 14.287 & 0.000 & 14.287 \\ \hline
+    woa & 0.666 & 75.800  & 0.906 &  13.050 & 2598.000 & 47.902 & 0.716 & 0.000  & 0.716 &  13.617 & 355.200 & 20.111  \\ \hline
+    woa-ls & 0.669 & 0.000  & 0.669 &  19.709 & 842.600  & 31.012 & 0.716 & 0.000  & 0.716 &   	14.287 & 0.000 &  	14.287  \\ \hline
+
+  \end{tabular}}
+  \caption{Resultados medios obtenidos para el problema del PAR con restricciones del 20\%}
+\end{table}
+
+Con esta modificación que hemos hecho se puede comprobar que los resultados
+mejoran de manera considerable sobre todo en el aspecto de reducir el factor de
+infeasibility que ha sido uno de los lastres en la puntuación del algoritmo
+base. 
+
+No obstante pese a que los resultados han mejorado en ambos problemas y se
+alcanzan los óptimos en 3 de los 4 datasets, el problema para el dataset
+\textit{ecoli} sigue sin ser óptimo. 
+
+Si analizamos un poco más el comportamiento del algoritmo aunque hemos aumentado
+la componente de explotación de la solución, la exploración del espacio todavía
+queda en duda ya que aunque el agente guía del problema mejora y arrastra las
+soluciones hasta óptimos, estas no se mueven lo suficiente para explorar de
+manera eficiente el espacio de búsqueda y esto justifica que los resultdaos
+mejoren pero se queden en óptimos locales.
+
+\section{Modificación II: Sistema elitista}
+
+Una vez mejorada la calidad de las soluciones por la explotación que hace la
+búsqueda local creía necesario un sistema para mejorar la exploración del
+espacio de soluciones. Para ello he pensado en aumentar el número de ballenas
+guía que intervienen en la ejecución del algoritmo, en lugar de utilizar solo la
+mejor. 
+
+Creamos una lista de ballenas élite en cada iteración y hacemos que los
+movimientos dependan de una ballena aleatoria de este subconjunto en lugar de
+usar siempre la mejor ballena o una aleatoria, como hace el algoritmo base. Esto
+no afecta a las soluciones en el sentido de que se introduzca un sesgo ya que,
+por el propio diseño del algoritmo, las ballenas cambian con un factor aleatorio
+su movimiento lo que permite un alto desplazamiento por el espacio de
+soluciones.
+
+Además buscando un equilibrio entre exploración y explotación he decidido
+aplicar al igual que antes una búsqueda local, ya que como se vio, era algo de
+lo que el algoritmo se beneficiaba de manera importante. Para no romper el
+equilibrio que buscamos entre exploración y explotación me he decantado por 
+tomar varias decisiones.
+
+En primer lugar la lista de soluciones de élite esta limitada a 5 elementos ya
+que tras haber probado distintos parámetros, este es el valor que aprovecha mejor
+el número de evaluaciones disponibles. En segundo lugar la búsqueda local no la
+voy a aplicar al final de cada iteración del algoritmo ya que, como se vió en la
+primera versión, las soluciones tienden a encontrar mínimos locales. En su lugar
+he fijado un parametro tal que si no se producen mejoras durante un intervalo de
+evaluaciones concreto, se procede a aplicar una búsqueda local sobre las
+soluciones en la lista de soluciones élite.
+
+Con esta decisión se mejora la exploración del espacio de soluciones y aumenta
+la explotación de soluciones concretas.
+
+\begin{algorithm}[H]
+  \caption{Whale optimization Algorithm + LS}
+  \label{alg-lsearch}
+  \begin{algorithmic}[1]
+    \Procedure{WOA-POOL}{max\_evaluaciones}
+    \State whales: Inicializar un conjunto de ballenas con k centroides aleatorios
+    \State Evaluamos las diferentes ballenas usando nuestra métrica 
+    \State Selecccionamos un conjunto de ballenas de elite, las $\alpha$ mejores
+    \State Guardamos la mejor solución encontrada al problema
+    \State evaluaciones $\leftarrow$ 0
+    \While {evaluaciones $<$ max\_evaluaciones }
+    \State actualizamos el parametro $a$
+    \For{agente en la lista de ballenas}
+    \State Determianr $p$ y calcular  $A$ y $C$.
+    \If{$p<0.5$}
+    \If {$|A| < 1$}
+    \State Movemos la ballena usando el movimeinto rectilineo \eqref{eq:1} con una ballena del conjunto de élite
+    \ElsIf {$|A|>1$} 
+    \State Movimiento rectilineo usando una ballena eleatoria
+    \EndIf
+    \Else
+    \State Movimiento en espiral utilizando \eqref{eq:2}
+    \EndIf
+    \EndFor 
+    \State Comprobar si alguna solución se ha salido de los limites del problema
+    \State Incremenetar evaluaciones en el número de evaluaciones correspondiente
+    
+    \State Evaluar las soluciones encontradas y actualizar la mejor ballena 
+
+    \If{no se ha producido mejora en las ultimas $\lambda$ evaluaciones}
+    \State Aplicar búsqueda local en el conjunto de ballenas de elite
+    \EndIf
+
+    \EndWhile
+    \State
+    \Return Construir la solución asociada a la mejor ballena encontrada
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
+
+\subsection{Experimentación}
+
+Al igual que antes se ha procedido a ejectuar el algoritmo con una población de
+ballenas  de 30 individuos y con un tamaño para la lista de ballenas élite de 5
+individuos. El número de evaluaciones para la búsqueda local se ha fijado en un
+máximo 5000 y estas se producirán si no se mejora la solución en un intervalo de
+1000 evaluaciones.
+
+\input{tables/woa-pool_10.tex}
+\input{tables/woa-pool_20.tex}
+
+\subsection{Análisis}
+
+\begin{table}[H]
+  \centering
+  \resizebox{\textwidth}{!}{
+  \begin{tabular}{|l|l|l|l|l|l|l|l|l|l|l|l|l|}
+    \hline
+    & \multicolumn{3}{c}{Iris} & \multicolumn{3}{|c}{Ecoli} & \multicolumn{3}{|c}{Rand}& \multicolumn{3}{|c|}{Newthyroid} \\ \hline
+    & tasa C  & inf & score  & tasa C & inf & score & tasa C & inf  & score & tasa C & inf & score\\ \hline 
+    greedy & 1.800 & 355.8 & 4.057 & 44.613 & 1500.4 & 84.868  & 2.227 & 299.4 & 4.383 &13.160  &958.2 & 48.203\\ \hline
+    ls & 0.669 & 0.000  & 0.669 & 21.604 & 92.200 & 24.078 & 0.716  &0.000  &0.716  & 13.246  &24.4 & 14.138\\ \hline
+    age-fs & 0.669 & 0.000 & 0.669  & 21.291 &94.000  & 23.813 & 0.716  & 0.000 &0.716  &12.043  & 63.600 & 14.369\\ \hline
+    age-u & 0.669 & 0.000 & 0.669 & 21.622 & 97.800 & 24.246 & 0.716 & 0.000 & 0.716 &12.038 & 67.000  &14.488\\ \hline
+    agg-fs & 0.671	 & 4.000 & 0.696 & 22.855  & 146.60  & 26.788 & 0.723  & 4.200 & 0.753 &13.835  & 6.000 &14.054 \\ \hline
+    agg-u & 0.669 & 0.000  & 0.669 & 22.617  & 141.80 & 26.422 & 0.716 & 0.000 & 0.716 & 12.645 & 51.800 &14.539\\ \hline
+    am-01 & 0.669 & 0.000 & 0.669  &23.726  & 98.200  & 26.360 & 0.716 &0.000  & 0.716	 & 12.037 & 68.200 &14.531\\ \hline
+    am-all & 0.671 & 1.800 & 0.682 & 22.759 & 97.600 & 25.377 &0.719  & 1.000 & 0.727 &12.036  & 61.200& 14.275\\ \hline
+    am-top-01 & 0.669  & 0.000 & 0.669 & 21.929 & 125.00 &25.283  & 0.716	 &0.000  &0.716  & 12.070&65.800 &14.476 \\ \hline
+    es & 0.669 & 0.000  & 0.669 & 21.679 & 83.800 & 23.927 & 0.716  & 0.000 & 0.716 & 12.628  & 47.400 & 14.362  \\ \hline
+    bmb & 0.669 & 0.000  & 0.669 & 21.997 & 156.000 & 26.183 & 0.716  & 0.000 & 0.716 & 13.835	 & 6.000 & 14.054 \\ \hline
+    ils & 0.669 & 0.000  & 0.669 & 21.781 & 75.800 & 23.815	 & 0.716 & 0.000 & 0.716 & 13.835  & 6.000 & 14.054  \\ \hline
+    ils-es & 0.669 & 0.000  & 0.669 &  28.198 & 332.800	 & 37.127 & 0.716 & 0.000  & 0.716 &  13.835 & 6.000 & 14.054  \\ \hline
+    woa & 0.667 	 & 40.200  & 0.922 &  13.065 & 1289.600 & 47.664 & 0.716 & 0.000  & 0.716 &  13.650 & 197.800  &  	20.883 \\ \hline
+    woa-ls & 0.669 & 0.000  & 0.669 &  19.663 & 356.000  & 29.215 & 0.716 & 0.000  & 0.716 &   	 	13.835 & 6.000 &  	14.054  \\ \hline
+    woa-pool & 0.669 & 0.000  & 0.669 &  22.607 & 146.200  & 26.530 & 0.716 & 0.000  & 0.716 &   	 	13.835 & 6.000 &  	14.054  \\ \hline
+
+  \end{tabular}}
+  \caption{Resultados medios obtenidos para el problema del PAR con restricciones del 10\%}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \resizebox{\textwidth}{!}{
+  \begin{tabular}{|l|l|l|l|l|l|l|l|l|l|l|l|l|}
+    \hline
+    & \multicolumn{3}{c}{Iris} & \multicolumn{3}{|c}{Ecoli} & \multicolumn{3}{|c}{Rand}& \multicolumn{3}{|c|}{Newthyroid} \\ \hline
+    & tasa C  & inf & score  & tasa C & inf & score & tasa C & inf  & score & tasa C & inf & score\\ \hline 
+    greedy &1.686  &690.4  &3.874  &44.953  &3166.6  & 87.433 & 2.332 & 667.8  & 4.735 & 13.200 &2056.4  & 50.795 \\ \hline
+    ls & 0.669 & 0.000 & 0.669 & 21.828 & 167.6 &24.076  &  0.716  & 0.000 & 0.716  &12.215  &152.0  & 14.994 \\ \hline
+    age-fs &0.669  & 0.000 &0.669  &22.000	  &158.200  & 24.122 &0.716  & 0.000  & 0.716 & 12.896  &95.80  & 14.647  \\ \hline
+    age-u& 0.669 & 0.000 & 0.669 & 21.346 & 194.400 & 23.954 & 0.716 & 0.000  & 0.716 & 12.911 &97.00  & 14.684 \\ \hline
+    agg-fs& 0.675 & 8.600 & 0.702 & 22.330 &192.800  & 24.916 & 0.737 & 13.00  & 0.783  &12.908	  & 98.0 & 14.699  \\ \hline
+    agg-u&0.669  & 0.000 &0.669  &22.607  &209.400  &25.416  &0.716  & 0.000 & 0.716 &12.744  &151.20  & 15.508  \\ \hline
+    am-01& 0.669 & 0.000 & 0.669 & 22.186 & 211.400 &25.021  & 0.716 & 0.000  & 0.716 &13.026  &152.00  & 15.805 \\ \hline
+    am-all& 0.676 & 5.000 &0.692  &21.965  & 160.400 & 24.116 & 0.720 & 4.800 & 0.738 &12.893  & 91.80 & 14.572 \\ \hline
+    am-top-01&0.669  & 0.000 &0.669  &22.986  & 201.200  &25.685  & 0.716 & 0.000 & 0.716 &12.453  &156.8  & 15.320 \\ \hline
+    es & 0.669 & 0.000  & 0.669 & 21.849 & 	179.000 & 24.250 &  0.716	 & 0.000 & 0.716 & 12.206 & 159.000 & 15.112 \\ \hline
+    bmb & 0.669 & 0.000  & 0.669 & 22.428	  & 224.400	 & 25.439 &  0.716 & 0.000 & 0.716 & 14.287 & 0.000 & 14.287 \\ \hline
+    ils & 0.669 & 0.000  & 0.669 &  21.826 & 182.400 & 24.273	 & 0.716 & 0.000 & 0.716 & 14.287 & 0.000 & 14.287 \\ \hline
+    ils-es & 0.669 & 0.000  & 0.669 & 28.232  & 	646.400 & 36.903 &  0.716 & 0.000 & 0.716 & 14.287 & 0.000 & 14.287 \\ \hline
+    woa & 0.666 & 75.800  & 0.906 &  13.050 & 2598.000 & 47.902 & 0.716 & 0.000  & 0.716 &  13.617 & 355.200 & 20.111  \\ \hline
+    woa-ls & 0.669 & 0.000  & 0.669 &  19.709 & 842.600  & 31.012 & 0.716 & 0.000  & 0.716 &   	14.287 & 0.000 &  	14.287  \\ \hline
+    woa-pool & 0.669 & 0.000  & 0.669 &  22.316 & 320.200  & 26.612 	 & 0.716 & 0.000  & 0.716 &   	14.287 & 0.000 &  	14.287  \\ \hline
+  \end{tabular}}
+  \caption{Resultados medios obtenidos para el problema del PAR con restricciones del 20\%}
+\end{table}
+
+En esta última tabla de resultados donde comparamos la segunda versión con el
+resto de algoritmos desarrollados nos muestra resultados interesantes. 
+
+En primer lugar se confirma que la modificación ha tenido un efecto positivo en
+la metaheurística ya que se alcanzan resultados iguales en los datasets iris,
+rand y Newthyroid donde teníamos ya los óptimos y en el caso del dataset Ecoli,
+para los dos problemas, llegamos a soluciones que empiezan a ser satisfactorias.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/comparativa}
+  \caption{Resultados medios obtenidos para el problema ecoli-10}
+\end{figure}
+
+\subsection{Modificación III: Operadores de cruces}
+
+Tras pensar posibles soluciones para mejorar más la metaheurística me decanté
+por buscar en la literatura sobre modificaciones de otros autores a esta
+metaheurística. En concreto encontré donde se proponen dos
+operadores de cruce para mejorar las características de
+explotación-diversificación del algoritmo. Me decanté por implementar esta
+versión ya que tenía algunas ideas que yo había considerado como mantener una
+lista de mejores soluciones y pensé que podría aportar algo interesante al
+estudio.
+
+En el algoritmo al final de cada iteración se decide con una probabilidad del
+cincuenta por ciento entre una de los dos operadores siguientes
+
+\begin{algorithm}[H]
+  \caption{Intensificación por cruce}
+  \label{intensificacion}
+  \begin{algorithmic}[1]
+    \Procedure{intensificación}{}
+    \For{$i \in 0\dots\eta$}
+    \State Seleccionamos una ballena aleatoria $X_i$
+    \State seleccionamos una ballena $X^*$ aleatoria del conjunto de mejores ballenas 
+    \For{$j \in 0\dots\alpha$ centroides aleatorios}
+    \State Replazar el centroide $C_j$ de $X_i$ por el centroide $-C_j$ de $X^*$
+    \EndFor
+    \EndFor    
+    \EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{diversificación por cruce}
+  \label{diversificacion}
+  \begin{algorithmic}[1]
+    \Procedure{Diversificación}{}
+    \For{$i \in 0\dots\eta$}
+    \State Seleccionamos una ballena aleatoria $X_i$
+    \State seleccionamos otra ballena $X_{rand}$ aleatoria del conjunto de ballenas 
+    \For{$j \in 0\dots\alpha$ centroides aleatorios}
+    \State Replazar el centroide $C_j$ de $X_i$ por el centroide $-C_j$ de $X_{rand}$
+    \EndFor
+    \EndFor    
+    \EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+La versión del algoritmo introduciendo estos cambios sería 
+
+\begin{algorithm}[H]
+  \caption{Whale optimization Algorithm + LS}
+  \label{alg-lsearch}
+  \begin{algorithmic}[1]
+    \Procedure{WOA-SHAKE}{max\_evaluaciones}
+    \State whales: Inicializar un conjunto de ballenas con k centroides aleatorios
+    \State Evaluamos las diferentes ballenas usando nuestra métrica 
+    \State Selecccionamos $X^*$ la mejor ballena
+    \State Guardamos la mejor solución encontrada al problema
+    \State evaluaciones $\leftarrow$ 0
+    \While {evaluaciones $<$ max\_evaluaciones }
+    \State actualizamos el parametro $a$
+    \For{agente en la lista de ballenas}
+    \State Determianr $p$ y calcular  $A$ y $C$.
+    \If{$p<0.5$}
+    \If {$|A| < 1$}
+    \State Movemos la ballena usando el movimeinto rectilineo \eqref{eq:1}
+    \ElsIf {$|A|>1$} 
+    \State Movimiento rectilineo usando una ballena eleatorio
+    \EndIf
+    \Else
+    \State Movimiento en espiral utilizando \eqref{eq:2}
+    \EndIf
+    \EndFor 
+    \State Comprobar si alguna solución se ha salido de los limites del problema
+    \State Incremenetar evaluaciones en el número de evaluaciones correspondiente
+    
+    \State Evaluar las soluciones encontradas y actualizar la mejor ballena 
+
+    \If{no se ha producido mejora en las ultimas $\lambda$ evaluaciones}
+    \If{numero aleatorio $<$ 0.5}
+    \State Aplicar Intensificación \ref{intensificacion}
+    \Else
+    \State Aplicar Diversificación \ref{diversificacion}
+    \EndIf
+    \EndIf    
+    \If{la mejor ballena es la mejor solución encontrada}
+    \State Actualizar la mejor solución encontrada hasta el momento
+    \EndIf
+
+    \EndWhile
+    \State
+    \Return Construir la solución asociada a la mejor ballena encontrada
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
+
+\subsection{Experimentación}
+
+\input{tables/woa-shake_10.tex}
+\input{tables/woa-shake_20.tex}
+
+
+
+
+\section{Conclusiones}
+
+En el desarrollo de esta práctica hemos introducido una metaheurística de tipo
+PSO para solucionar el problema de clustering con restricciones. Tras solventar
+el problema de adaptar la metaheurística al problema hemos visto que las
+soluciones no eran buenas pese a que las ideas que se introducen en el algoritmo
+resultaban interesantes teoricamente. 
+
+Con las modificaciones introducidas tomadas de ideas que hemos visto a lo largo
+del cuatrimestre han permitido que lleguemos a una implementación que mejora las
+características de explotación-exploración de la metaheurística para el problema
+y que han permitido encontrar resultados óptimos en 3/4 de los problemas y
+resultados bastante buenos para el dataset \textit{ecoli}.
+
+\bibliographystyle{abbrv}
+\bibliography{refs}
 
 \end{document}

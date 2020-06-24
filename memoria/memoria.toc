@@ -3,5 +3,16 @@
 \contentsline {section}{\numberline {2}Whale Optimziation Algorithm}{4}{section.2}%
 \contentsline {subsection}{\numberline {2.1}Descripción de la metaheurística}{4}{subsection.2.1}%
 \contentsline {subsection}{\numberline {2.2}Adaptación de la metaheurística al problema}{6}{subsection.2.2}%
-\contentsline {section}{\numberline {3}Implementación y desarrollo del experimento}{8}{section.3}%
-\contentsline {section}{\numberline {4}Análisis de los resultados}{10}{section.4}%
+\contentsline {section}{\numberline {3}Implementación y desarrollo del experimento}{10}{section.3}%
+\contentsline {section}{\numberline {4}Análisis de los resultados}{11}{section.4}%
+\contentsline {section}{\numberline {5}Modificación I: Busqueda local}{13}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Descripción de los cambios}{13}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Experimentación}{15}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Análisis}{17}{subsection.5.3}%
+\contentsline {section}{\numberline {6}Modificación II: Sistema elitista}{18}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Experimentación}{19}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Análisis}{21}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Modificación III: Operadores de cruces}{22}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.4}Experimentación}{25}{subsection.6.4}%
+\contentsline {section}{\numberline {7}Conclusiones}{26}{section.7}%
+\contentsline {section}{Referencias}{26}{section*.19}%
