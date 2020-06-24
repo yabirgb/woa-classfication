@@ -42,6 +42,7 @@ numbers=left,numberstyle=\scriptsize
 \usepackage{caption}
 \usepackage{subcaption}
 
+
 \title{Whale Optimziation Algorithm aplicado al problema de clustering}
 \author{Yábir García Benchakhtir}
 \begin{document}
@@ -70,7 +71,7 @@ una relación entre los puntos de un mismo grupo. A cada grupo lo
 denominaremos \textit{cluster} y notaremos $\mathcal{C}$ al conjunto
 de todos los clusters.
 
-Sobre esta base imponenmos restricciones en la manera en la que se
+Sobre esta base imponemos restricciones en la manera en la que se
 realizan las agrupaciones. En primer lugar existe un subconjunto de
 pares de puntos $ML$ definido como
 
@@ -86,7 +87,7 @@ Notaremos por $R = ML \cup CL$ al conjunto de restricciones del problema.
 
 Nos concentraremos en encontrar soluciones bajo restricciones \textit{débiles} a
 este problema donde intentaremos encontrar soluciones que minimicen el conjunto
-restricciones violadas.
+restricciones incumplidas.
 
 En nuestros algoritmos intentaremos minimizar la distancia que haya
 entre los puntos de cada cluster sujeto a que se violen el menor
@@ -135,7 +136,7 @@ donde \textit{infeasibility} es la cantidad de restricciones incumplidas.
 \section{Whale Optimziation Algorithm}
 
 La metaheurística elegida para resolver el problema ha sido Whale Optimziation
-Algorithm (WOA) propuesta por Seyedali Mirjalili y Andrew Lewis en 2016. Esta
+Algorithm (WOA) propuesta por Seyedali Mirjalili y Andrew Lewis en 2016 \cite{woa}. Esta
 metaheurística basa su comportamiento en las técnicas depredadoras de la ballena
 jorobada y su comportamiento social. 
 
@@ -156,16 +157,16 @@ a la optimización de una función real.
 
 Los agentes $X$ que participan en nuestro algoritmo (y que representan a las
 ballenas) se van a representar como $N$ vectores de dimensión $d$ donde cada
-componente del vector del agente representa una coordenada en nuestra solución
+componente del vector del agente representa el centroide de un cluster
 
 \[
     X_i(t) = <X_{i1}(t), X_{i2}(t), \dots, X_{id}(t)>
 \]
 
-como deja entrever esta notación el estado de la ballena depende de una variable 
-temporal $t$ que represneta el instante de tiempo en el que nos encontramos y 
+Como deja entrever esta notación, el estado de la ballena depende de una variable 
+temporal $t$ que representa el instante de tiempo en el que nos encontramos y 
 que está limitado por una constante $T$ que fijamos nosotros. En cada instante 
-$t$ la mejor solución vendrá represnetada por $X^*$.
+$t$ la mejor solución vendrá representada por $X^*$.
 
 Procedemos en primer lugar a definir el operador distancia entre dos ballenas
 
@@ -176,7 +177,7 @@ Procedemos en primer lugar a definir el operador distancia entre dos ballenas
 
 que es la distancia coordenada a coordenada.
 
-El movimiento de caza se represneta por la modificación del vector agente
+El movimiento de caza se representa por la modificación del vector agente
 mediante la expresión
 
 \begin{align}
@@ -190,7 +191,7 @@ la expresión
     D^1_i = ||CX^*(t)-X_i(t)||    
 \]
 
-y $A \text{ y } C$ se obtinen como 
+y $A \text{ y } C$ se obtienen como 
 
 \begin{align*}
     A &= 2a\cdot r - a \\
@@ -217,14 +218,11 @@ mediante la actualización del agente de acuerdo a la expresión
 \end{align}
 
 siendo $b \in \mathbb{R}$ constante y $l \in [-1,1]$ aleatorio de manera que
-nos definen un radio para la espiral en cada instante. La notación $\oplus$ 
-se define como 
-
-
+nos definen un radio para la espiral en cada instante.
 
 El movimiento de caza natural mezcla tanto los desplazamientos en linea recta
 como el comportamiento en espiral por lo que se introduce un factor aleatorio
-$p \in [0,1]$ que decide que tipo de movimeinto se va a realizar
+$p \in [0,1]$ que decide que tipo de movimiento se va a realizar
 
 \[
     X_i(t+1) =  
@@ -238,7 +236,7 @@ $p \in [0,1]$ que decide que tipo de movimeinto se va a realizar
 
 Durante el desarrollo de la asignatura hemos trabajado con una representación
 de la solución que se centraba en la asignación de cada punto a un cluster
-y se recalculaba en cada caso los centros de cada cluster. El espacio de búsqueda 
+y se re-calculaba en cada caso los centros de cada cluster. El espacio de búsqueda 
 era 
 
 \[
@@ -250,7 +248,7 @@ de clusters que consideramos.
 
 Para adaptar la metaheurística he decidido variar mi enfoque del problema y, en
 lugar de modificar las asignaciones que hago de los puntos, pensar que cada
-agente representa las coordenas de los centroiedes del problema.
+agente representa las coordenadas de los centroiedes del problema.
 
 Así cada agente (ballena) queda definido como 
 
@@ -289,14 +287,14 @@ El comportamiento del algoritmo, como se muestra a continuación, es sencillo
     \If {$|A| < 1$}
     \State Movemos la ballena usando el movimeinto rectilineo \eqref{eq:1}
     \ElsIf {$|A|>1$} 
-    \State Movimiento rectilineo usando una ballena eleatorio
+    \State Movimiento rectilineo usando una ballena eleatoria \eqref{eq:1}
     \EndIf
     \Else
     \State Movimiento en espiral utilizando \eqref{eq:2}
     \EndIf
     \EndFor 
     \State Comprobar si alguna solución se ha salido de los limites del problema
-    \State Incremenetar evaluaciones en el número de evaluaciones correspondiente
+    \State Incrementar evaluaciones en el número de evaluaciones correspondiente
     \State Evaluar las soluciones encontradas y actualizar la mejor ballena 
     \If{la mejor ballena es la mejor solución encontrada}
     \State Actualizar la mejor solución encontrada hasta el momento
@@ -324,12 +322,12 @@ formato que hemos descrito es
     \If {$K.size() == 1$}
     \State Asignar $p$ al cluster $K[0]$
     \Else
-    \State Calcular la dinstancia del punto $p$ al centro de cada cluster $k_i \in K$
+    \State Calcular la distancia del punto $p$ al centro de cada cluster $k_i \in K$
     \State Asignar $p$ al cluster más cercano
     \EndIf
     \EndFor
     \State
-    \Return Construir la solución asociada a la mejor ballena encontrada
+    \Return Construir la asignación a partir de la lista de puntos en cada cluster
     \EndProcedure
   \end{algorithmic}
 \end{algorithm}
@@ -376,7 +374,7 @@ para calcular el valor de desviación instracluster
   \end{algorithm}
   
   
-  también nos hará falta un metodo para calcular lo que en la
+  también nos hará falta un método para calcular lo que en la
   descripción del problema hemos llamado $\lambda$.
   
   \begin{algorithm}[H]
@@ -388,7 +386,7 @@ para calcular el valor de desviación instracluster
     \For {u $\in$ data}
     \For {v $\in$ data}
     \State d $\leftarrow$ norm 2 of u - v
-    \If {d > max\_dist}
+    \If {d $>$ max\_dist}
     \State max\_dist = d
     \EndIf
     \EndFor
@@ -419,8 +417,8 @@ para calcular el valor de desviación instracluster
 
 La implementación del código ha sido realizada en el lenguaje de programación
 \textit{Rust} ya que ha sido el el usado durante el desarrollo de las anteriores
-prácticas, por lo que se ha podido reutilzar código y las ejecuciones han sido
-realizadas bajo las mismas optimzaciones en el lenguaje.
+prácticas, por lo que se ha podido reutilizar código y las ejecuciones han sido
+realizadas bajo las mismas optimizaciones en el lenguaje.
 
 Los experimentos han sido ejecutados en un ordenador con las siguientes
 características
@@ -433,14 +431,14 @@ características
 
 Cada experimento consistente en la ejecución del algoritmo bajo 5 semillas
 distintas (37,42,440,699,752) de las que se han recopilado datos y se han
-agreado tomando medias. También se proporcionan en detalle los resultados para
+agregado tomando medias. También se proporcionan en detalle los resultados para
 cada ejecución.
 
 El tamaño de la población como hemos estudiado para este tipo de problemas se
 recomienda entre 20 y 50 individuos. En mi caso he optado por fijar este valor a
 30 individuos a fin de obtener una primera idea del funcionamiento del
-algoritmo. El parametro $b$ de la espiral lo he fijado a 1 ya que es el valor
-que se fija en la versión implementada en MATLAB. Tras haber
+algoritmo. El parámetro $b$ de la espiral lo he fijado a 1 ya que es el valor
+que se fija en la versión implementada en MATLAB \cite{matlab}. Tras haber
 ejecutado el algoritmo los resultados son los siguientes.
 
 \input{tables/woa_10.tex}
@@ -521,10 +519,10 @@ algoritmos con la que vamos a comparar es
 
 Viendo estos resultados comprobamos como el algoritmo efectivamente hace un buen
 trabajo reduciendo la distancia intracluster que era la parte que optimizaba el
-algoritmo pero sin embargo la solución empeora de manera considerable a que la
-asignación que se hace de los puntos proboca que se incumplan muchas restricciones.
+algoritmo pero sin embargo la solución empeora de manera considerable ya que la
+asignación que se hace de los puntos provoca que se incumplan muchas restricciones.
 
-También como se muestra en este historico de datos generado para el problema de
+También como se muestra en este histórico de datos generado para el problema de
 ecoli con un 10\% de restricciones se encuentran de manera sucesiva mejores
 soluciones en etapas tempranas de la ejecución pero después la calidad de las
 soluciones no mejora de manera considerable aún estando lejos del óptimo conocido. 
@@ -544,9 +542,9 @@ Una primera solución que planteo al problema es la hibridación con una búsque
 local. El motivo es que los centroides creados ya optimizan bien la distancia de
 los centros a los puntos pero no el valor de infeasibility. Con una búsqueda
 local podemos modificar las soluciones de manera que se mejore el factor de
-infeasibility y se mantengan buenos resultados.
+infeasibility y se mantengan buenos resultados en lo que a las distancias se refiere.
 
-\section{Modificación I: Busqueda local}
+\section{Modificación I: Búsqueda local}
 
 \subsection{Descripción de los cambios}
 
@@ -559,7 +557,7 @@ que queda descrita en el siguiente código.
   \caption{Aplicación de la búsqueda local al problema de clustering con restricciones}
   \label{alg-lsearch}
   \begin{algorithmic}[1]
-    \Procedure{solve}{}
+    \Procedure{LS}{}
     \State clusters = \{1,2,\dots k\}
     \State solucion = $<s_1,s_2, \dots,s_n>$
     \State saltos = 0
@@ -599,18 +597,18 @@ pseudocódigo sería la siguiente
     \Procedure{WOA-LS}{max\_evaluaciones}
     \State whales: Inicializar un conjunto de ballenas con k centroides aleatorios
     \State Evaluamos las diferentes ballenas usando nuestra métrica 
-    \State Selecccionamos $X^*$ la mejor ballena
+    \State Seleccionamos $X^*$ la mejor ballena
     \State Guardamos la mejor solución encontrada al problema
     \State evaluaciones $\leftarrow$ 0
     \While {evaluaciones $<$ max\_evaluaciones }
-    \State actualizamos el parametro $a$
+    \State actualizamos el parámetro $a$
     \For{agente en la lista de ballenas}
-    \State Determianr $p$ y calcular  $A$ y $C$.
+    \State Determinar $p$ y calcular  $A$ y $C$.
     \If{$p<0.5$}
     \If {$|A| < 1$}
-    \State Movemos la ballena usando el movimeinto rectilineo \eqref{eq:1}
+    \State Movemos la ballena usando el movimiento rectilíneo \eqref{eq:1}
     \ElsIf {$|A|>1$} 
-    \State Movimiento rectilineo usando una ballena eleatorio
+    \State Movimiento rectilíneo usando una ballena aleatoria \eqref{eq:1}
     \EndIf
     \Else
     \State Movimiento en espiral utilizando \eqref{eq:2}
@@ -632,7 +630,7 @@ pseudocódigo sería la siguiente
 
 \subsection{Experimentación}
 
-Volviendo a ejectuar el conjunto de tests con la nueva implementación obtenemos
+Volviendo a ejecutar el conjunto de tests con la nueva implementación obtenemos
 los siguientes resultados
 
 \input{tables/woa-ls_10.tex}
@@ -708,8 +706,9 @@ Si analizamos un poco más el comportamiento del algoritmo aunque hemos aumentad
 la componente de explotación de la solución, la exploración del espacio todavía
 queda en duda ya que aunque el agente guía del problema mejora y arrastra las
 soluciones hasta óptimos, estas no se mueven lo suficiente para explorar de
-manera eficiente el espacio de búsqueda y esto justifica que los resultdaos
-mejoren pero se queden en óptimos locales.
+manera eficiente el espacio de búsqueda y esto justifica que los resultados
+mejoren pero se queden en óptimos locales. El siguiente paso en la mejora del
+algoritmo es intentar solucionar este problema.
 
 \section{Modificación II: Sistema elitista}
 
@@ -723,8 +722,8 @@ Creamos una lista de ballenas élite en cada iteración y hacemos que los
 movimientos dependan de una ballena aleatoria de este subconjunto en lugar de
 usar siempre la mejor ballena o una aleatoria, como hace el algoritmo base. Esto
 no afecta a las soluciones en el sentido de que se introduzca un sesgo ya que,
-por el propio diseño del algoritmo, las ballenas cambian con un factor aleatorio
-su movimiento lo que permite un alto desplazamiento por el espacio de
+por el propio diseño del algoritmo, las ballenas cambian, con un factor aleatorio,
+su movimiento lo que permite cierta movilidad por el espacio de
 soluciones.
 
 Además buscando un equilibrio entre exploración y explotación he decidido
@@ -746,31 +745,31 @@ Con esta decisión se mejora la exploración del espacio de soluciones y aumenta
 la explotación de soluciones concretas.
 
 \begin{algorithm}[H]
-  \caption{Whale optimization Algorithm + LS}
+  \caption{Whale optimization Algorithm + LS + Elite}
   \label{alg-lsearch}
   \begin{algorithmic}[1]
     \Procedure{WOA-POOL}{max\_evaluaciones}
     \State whales: Inicializar un conjunto de ballenas con k centroides aleatorios
     \State Evaluamos las diferentes ballenas usando nuestra métrica 
-    \State Selecccionamos un conjunto de ballenas de elite, las $\alpha$ mejores
+    \State Seleccionamos un conjunto de ballenas de elite, las $\alpha$ mejores
     \State Guardamos la mejor solución encontrada al problema
     \State evaluaciones $\leftarrow$ 0
     \While {evaluaciones $<$ max\_evaluaciones }
-    \State actualizamos el parametro $a$
+    \State actualizamos el parámetro $a$
     \For{agente en la lista de ballenas}
-    \State Determianr $p$ y calcular  $A$ y $C$.
+    \State Determinar $p$ y calcular  $A$ y $C$.
     \If{$p<0.5$}
     \If {$|A| < 1$}
-    \State Movemos la ballena usando el movimeinto rectilineo \eqref{eq:1} con una ballena del conjunto de élite
+    \State Movemos la ballena usando el movimiento rectilineo \eqref{eq:1} con una ballena del conjunto de élite
     \ElsIf {$|A|>1$} 
-    \State Movimiento rectilineo usando una ballena eleatoria
+    \State Movimiento rectilíneo usando una ballena aleatoria \eqref{eq:1}
     \EndIf
     \Else
     \State Movimiento en espiral utilizando \eqref{eq:2}
     \EndIf
     \EndFor 
     \State Comprobar si alguna solución se ha salido de los limites del problema
-    \State Incremenetar evaluaciones en el número de evaluaciones correspondiente
+    \State Incrementar evaluaciones en el número de evaluaciones correspondiente
     
     \State Evaluar las soluciones encontradas y actualizar la mejor ballena 
 
@@ -867,16 +866,24 @@ para los dos problemas, llegamos a soluciones que empiezan a ser satisfactorias.
   \caption{Resultados medios obtenidos para el problema ecoli-10}
 \end{figure}
 
-\subsection{Modificación III: Operadores de cruces}
+En este cuadro podemos ver de manera visual la diferencia entre los resultados
+medios obtenidos para cada algoritmo en el conjunto más complejo, ecoli-10. Como
+se puede apreciar ha habido una evolución positiva entre las distintas mejores
+que hemos implementado, siendo el uso de la búsqueda local la versión que más a
+mejorado los resultados. Como muestran los datos en crudo si hemos encontrado
+soluciones muy buenas con esta versión como por ejemplo la que encuentra la
+semilla 699 pero la tendencia es a encontrar soluciones en general de peor
+calidad que otras técnicas que hemos visto en la asignatura.
+
+\section{Modificación III: Operadores de cruces}
 
 Tras pensar posibles soluciones para mejorar más la metaheurística me decanté
-por buscar en la literatura sobre modificaciones de otros autores a esta
-metaheurística. En concreto encontré donde se proponen dos
-operadores de cruce para mejorar las características de
-explotación-diversificación del algoritmo. Me decanté por implementar esta
-versión ya que tenía algunas ideas que yo había considerado como mantener una
-lista de mejores soluciones y pensé que podría aportar algo interesante al
-estudio.
+por buscar en la literatura sobre modificaciones de otros autores a la misma.
+En concreto encontré \cite{tabu} donde se proponen dos operadores de cruce para mejorar las
+características de explotación-diversificación del algoritmo. Me decanté por
+implementar esta versión ya que tenía algunas ideas que yo había considerado
+como mantener una lista de mejores soluciones y pensé que podría aportar algo
+interesante al estudio.
 
 En el algoritmo al final de cada iteración se decide con una probabilidad del
 cincuenta por ciento entre una de los dos operadores siguientes
@@ -906,7 +913,7 @@ cincuenta por ciento entre una de los dos operadores siguientes
     \State Seleccionamos una ballena aleatoria $X_i$
     \State seleccionamos otra ballena $X_{rand}$ aleatoria del conjunto de ballenas 
     \For{$j \in 0\dots\alpha$ centroides aleatorios}
-    \State Replazar el centroide $C_j$ de $X_i$ por el centroide $-C_j$ de $X_{rand}$
+    \State Remplazar el centroide $C_j$ de $X_i$ por el centroide $-C_j$ de $X_{rand}$
     \EndFor
     \EndFor    
     \EndProcedure
@@ -916,31 +923,31 @@ cincuenta por ciento entre una de los dos operadores siguientes
 La versión del algoritmo introduciendo estos cambios sería 
 
 \begin{algorithm}[H]
-  \caption{Whale optimization Algorithm + LS}
+  \caption{Whale optimization Algorithm + LS + Cruces}
   \label{alg-lsearch}
   \begin{algorithmic}[1]
     \Procedure{WOA-SHAKE}{max\_evaluaciones}
     \State whales: Inicializar un conjunto de ballenas con k centroides aleatorios
     \State Evaluamos las diferentes ballenas usando nuestra métrica 
-    \State Selecccionamos $X^*$ la mejor ballena
+    \State Seleccionamos $X^*$ la mejor ballena
     \State Guardamos la mejor solución encontrada al problema
     \State evaluaciones $\leftarrow$ 0
     \While {evaluaciones $<$ max\_evaluaciones }
-    \State actualizamos el parametro $a$
+    \State actualizamos el parámetro $a$
     \For{agente en la lista de ballenas}
-    \State Determianr $p$ y calcular  $A$ y $C$.
+    \State Determinar $p$ y calcular  $A$ y $C$.
     \If{$p<0.5$}
     \If {$|A| < 1$}
-    \State Movemos la ballena usando el movimeinto rectilineo \eqref{eq:1}
+    \State Movemos la ballena usando el movimiento rectilíneo \eqref{eq:1}
     \ElsIf {$|A|>1$} 
-    \State Movimiento rectilineo usando una ballena eleatorio
+    \State Movimiento rectilíneo usando una ballena aleatorio
     \EndIf
     \Else
     \State Movimiento en espiral utilizando \eqref{eq:2}
     \EndIf
     \EndFor 
     \State Comprobar si alguna solución se ha salido de los limites del problema
-    \State Incremenetar evaluaciones en el número de evaluaciones correspondiente
+    \State Incrementar evaluaciones en el número de evaluaciones correspondiente
     
     \State Evaluar las soluciones encontradas y actualizar la mejor ballena 
 
@@ -967,8 +974,23 @@ La versión del algoritmo introduciendo estos cambios sería
 \input{tables/woa-shake_10.tex}
 \input{tables/woa-shake_20.tex}
 
+\subsection{Resultados}
 
+En general como muestran las tablas anteriores los resultados que proporcionan
+esta nueva implementación no mejoran los resultados con los que partíamos del
+algoritmo base. El comportamiento que muestran los algoritmos de la modificación
+III y el algoritmo base son muy similares y todo apunta a que hay un problema en
+el equilibrio entre exploración y explotación, en este caso, por una falta de
+explotación de las soluciones. 
 
+No obstante la idea que se presentaba en este artículo era interesante por lo que
+como trabajo futuro podría ser interesante sustituir el operador de
+intensificación por otro tipo de algoritmo que produzca mejores resultados. 
+
+También podría ser interesante para trabajo futuro modificar el modo en el que
+se explora el espacio de soluciones ya que este artículo propone una especia de
+simetría de los centroides respecto a los ejes cartesianos y es muy probable que 
+esta sea la razón de que no funcione como se espera.
 
 \section{Conclusiones}
 
@@ -976,15 +998,44 @@ En el desarrollo de esta práctica hemos introducido una metaheurística de tipo
 PSO para solucionar el problema de clustering con restricciones. Tras solventar
 el problema de adaptar la metaheurística al problema hemos visto que las
 soluciones no eran buenas pese a que las ideas que se introducen en el algoritmo
-resultaban interesantes teoricamente. 
+resultaban interesantes teóricamente. 
 
 Con las modificaciones introducidas tomadas de ideas que hemos visto a lo largo
 del cuatrimestre han permitido que lleguemos a una implementación que mejora las
 características de explotación-exploración de la metaheurística para el problema
 y que han permitido encontrar resultados óptimos en 3/4 de los problemas y
-resultados bastante buenos para el dataset \textit{ecoli}.
+resultados que podemos considerar bastante buenos para el dataset
+\textit{ecoli}.
 
-\bibliographystyle{abbrv}
-\bibliography{refs}
+La implementación de los operadores de cruce, pese a que parecía una idea
+alternativa buena para solventar las carencias que hemos analizado en la
+metaheurística para este problema, han demostrado no ser tan eficaces.
+
+Se ha demostrado en esta práctica como es importante encontrar un equilibrio
+entre explotación y exploración ya que tiene un impacto directo en el
+comportamiento de las metaheurísticas y cómo distintas técnicas son más eficaces
+que otras en determinados problemas.
+
+\begin{thebibliography}{9}
+
+  \bibitem{woa}
+  Seyedali Mirjalili
+  \textit{The Whale Optimization Algorithm}
+  \url{https://doi.org/10.1016/j.advengsoft.2016.01.008}
+
+  \bibitem{taxonomi}
+  \textit{Comprehensive Taxonomies of Nature- and Bio-inspired Optimization: Inspiration versus Algorithmic Behavior, Critical Analysis and Recommendations}
+  \url{https://arxiv.org/abs/2002.08136}
+
+
+  \bibitem{tabu} 
+  Kareem Kamal A. Ghany, Amr Mohamed AbdelAziz, Taysir Hassan A. Soliman, Adel Abu El-Magd Sewisy 
+  \textit{A hybrid modified step Whale Optimization Algorithm with Tabu Search for data clustering}. 
+  \url{https://doi.org/10.1016/j.jksuci.2020.01.015}
+  
+  \bibitem{matlab}
+  Whale Optimization Algorithm Implementation in MATLAB
+  \url{https://github.com/AdrikaMukherjee/Whale-Optimization-Algorithm/blob/master/WOA.m}
+\end{thebibliography}
 
 \end{document}

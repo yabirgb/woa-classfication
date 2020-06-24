@@ -219,8 +219,7 @@ INPUT /home/yabirgb/Documents/woa-clustering/memoria/tables/woa-shake_10.tex
 INPUT /home/yabirgb/Documents/woa-clustering/memoria/tables/woa-shake_10.tex
 INPUT /home/yabirgb/Documents/woa-clustering/memoria/tables/woa-shake_20.tex
 INPUT /home/yabirgb/Documents/woa-clustering/memoria/tables/woa-shake_20.tex
-INPUT /home/yabirgb/Documents/woa-clustering/memoria/memoria.bbl
-INPUT /home/yabirgb/Documents/woa-clustering/memoria/memoria.bbl
+INPUT /usr/local/texlive/2020/texmf-dist/fonts/tfm/public/cm/cmtt10.tfm
 INPUT /home/yabirgb/Documents/woa-clustering/memoria/memoria.aux
 INPUT /home/yabirgb/Documents/woa-clustering/memoria/memoria.out
 INPUT /home/yabirgb/Documents/woa-clustering/memoria/memoria.out
@@ -239,4 +238,5 @@ INPUT /usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb
 INPUT /usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb
 INPUT /usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb
 INPUT /usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb
+INPUT /usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb
 INPUT /usr/local/texlive/2020/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb
