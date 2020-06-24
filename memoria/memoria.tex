@@ -44,7 +44,7 @@ numbers=left,numberstyle=\scriptsize
 
 
 \title{Whale Optimziation Algorithm aplicado al problema de clustering}
-\author{Yábir García Benchakhtir}
+\author{Yábir García Benchakhtir\\yabirgb@correo.ugr.es}
 \begin{document}
 
 \maketitle
@@ -276,18 +276,18 @@ El comportamiento del algoritmo, como se muestra a continuación, es sencillo
     \Procedure{WOA}{max\_evaluaciones}
     \State whales: Inicializar un conjunto de ballenas con k centroides aleatorios
     \State Evaluamos las diferentes ballenas usando nuestra métrica 
-    \State Selecccionamos $X^*$ la mejor ballena
+    \State Seleccionamos $X^*$ la mejor ballena
     \State Guardamos la mejor solución encontrada al problema
     \State evaluaciones $\leftarrow$ 0
     \While {evaluaciones $<$ max\_evaluaciones }
     \State actualizamos el parametro $a$
     \For{agente en la lista de ballenas}
-    \State Determianr $p$ y calcular  $A$ y $C$.
+    \State Determinar $p$ y calcular  $A$ y $C$.
     \If{$p<0.5$}
     \If {$|A| < 1$}
-    \State Movemos la ballena usando el movimeinto rectilineo \eqref{eq:1}
+    \State Movemos la ballena usando el movimiento rectilineo \eqref{eq:1}
     \ElsIf {$|A|>1$} 
-    \State Movimiento rectilineo usando una ballena eleatoria \eqref{eq:1}
+    \State Movimiento rectilineo usando una ballena aleatorio \eqref{eq:1}
     \EndIf
     \Else
     \State Movimiento en espiral utilizando \eqref{eq:2}
@@ -452,14 +452,14 @@ algoritmos con la que vamos a comparar es
 
 \begin{itemize}
   \item greedy: Versión greedy
-  \item ls: Busqueda local 
+  \item ls: Búsqueda local 
   \item age-fs: Algoritmo genético estacionario con cruce de segmento fijo 
   \item age-u: Algoritmo genético estacionario con cruce uniforme
   \item agg-fs: Algoritmo genético generacional con cruce de segmento fijo 
   \item agg-u: Algoritmo genético generacional con cruce uniforme
-  \item am-*: Algoritmo memético en diferentes variantes de los paráemtros 
+  \item am-*: Algoritmo memético en diferentes variantes de los parámetros 
   \item es: Enfriamiento simulado
-  \item bmb: Busqueda multiarranque básica
+  \item bmb: Búsqueda multiarranque básica
   \item ils: Búsqueda local iterativa
   \item ils-es: Búsqueda local iterativa con enfriamiento simulado
 \end{itemize}
@@ -737,7 +737,7 @@ que tras haber probado distintos parámetros, este es el valor que aprovecha mej
 el número de evaluaciones disponibles. En segundo lugar la búsqueda local no la
 voy a aplicar al final de cada iteración del algoritmo ya que, como se vió en la
 primera versión, las soluciones tienden a encontrar mínimos locales. En su lugar
-he fijado un parametro tal que si no se producen mejoras durante un intervalo de
+he fijado un parámetro tal que si no se producen mejoras durante un intervalo de
 evaluaciones concreto, se procede a aplicar una búsqueda local sobre las
 soluciones en la lista de soluciones élite.
 

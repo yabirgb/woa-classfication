@@ -1,0 +1,2 @@
+\beamer@sectionintoc {1}{Descripción del problema}{2}{0}{1}
+\beamer@sectionintoc {2}{Caza de la ballena jorobada}{10}{0}{2}
